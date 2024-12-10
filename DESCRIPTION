@@ -1,0 +1,15 @@
+Package: SIRModel
+Title: SIR Model Simulation
+Version: 0.0.0.9000
+Authors@R: 
+    person("Austin", "Melendez", , "austinmelendez@csus.edu", role = c("aut", "cre"))
+Description: A detailed SIR model simulation using any size matrix to represent healthy, infected, and dead cells.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Suggests: 
+    knitr,
+    rmarkdown,
+    graphics
+VignetteBuilder: knitr
