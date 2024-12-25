@@ -1,0 +1,14 @@
+Package: SIRSimulation
+Title: SIR Model Simulator
+Version: 0.0.0.9000
+Authors@R: 
+    person("Austin", "Melendez", , "austinmelendez@csus.edu", role = c("aut", "cre"))
+Description: Allows simulation runs of disease spread with different parameters. Optionally enable death, immunity to disease after infection, and customize probabilities for each parameter.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

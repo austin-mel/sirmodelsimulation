@@ -1,0 +1,116 @@
+---
+title: "SIR Simulation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{sirsimulation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(graphics)
+library(SIRSimulation)
+```
+
+## Getting started
+
+To get started with this package, you must first create a matrix that you can input into the simulation. You can use one of the methods to create a matrix in the package, or you can input a completely custom matrix. It is required that the input is a matrix data type, however, the size of the matrix does not matter.
+
+You can create a matrix with a given chance of each cell starting as infected using the function.
+```{r}
+# Matrix with 25% chance of each cell starting infected
+x <- create_matrix(5,5,0.25)
+```
+Similarly, you can use other designs such as starting the corners or very center cell as infected.
+```{r}
+# corners infected matrix
+corners <- create_crnr_matrix(5,5)
+
+# Center infected matrix
+center <- create_cntr_matrix(15,15)
+```
+Or you can create your own custom matrix to use an your input.
+
+## Running a simulation
+
+To run a basic single simulation use the following function.
+```{r}
+# Run a basic simulation on matrix x
+# Set probability of infection to 0.25
+# Use default values auto_immunity FALSE and allow_death FALSE
+# Since auto_immunity is FALSE, this will use the default immunity probability value of 0.5
+simulate_sir(0.25,x)
+```
+However, there are some additional arguments we can add to the simulation call to increase the complexity of the simulation.
+
+You can specify a specific probability of immunity by using the following arguments.
+```{r}
+# Run a basic simulation on matrix x
+# Set probability of infection to 0.25
+# Use default values auto_immunity FALSE and allow_death FALSE
+# Set value for immunity probability to 0.34
+simulate_sir(0.25,x,FALSE,0.34)
+```
+
+We can enable the auto_immunity parameter so that every cell that gets infected automatically gains immunity.
+```{r}
+# Run a basic simulation on matrix x
+# Set probability of infection to 0.25
+# Set auto_immunity to TRUE and use default value of allow_death FALSE
+simulate_sir(0.25,x,TRUE)
+```
+Additionally, we can enable the allow_death parameter to enable cells to become Immune or Deceased after infection.
+```{r}
+# Run a basic simulation on matrix x
+# Set probability of infection to 0.25
+# Set auto_immunity to TRUE and immunity probability to 0.0
+# Set allow_death to TRUE and fatality probability to 0.19
+simulate_sir(0.25,x,TRUE,0.0,TRUE,0.19)
+```
+Lastly, we can disable the auto_immunity parameter and enable the allow_death parameter to enable cells to become Susceptible, Immune, or Deceased after infection.
+```{r}
+# Run a basic simulation on matrix x
+# Set probability of infection to 0.25
+# Set auto_immunity to FALSE and immunity probability to 0.35
+# Set allow_death to TRUE and fatality probability to 0.12
+simulate_sir(0.25,x,FALSE,0.35,TRUE,0.12)
+```
+
+## Simulating models over a sequence of infection probabilities
+
+You can also run any of the above models over a sequence of different infection probabilities to compare results.
+```{r}
+# Run the sequence of infection probabilities using the basic simulation on matrix x from above
+# Set step in sequence to 0.1
+simulate_inf_seq(x,0.1)
+```
+You can modify the parameters of this function the same as the simulate_sir() function to modify the simulation settings.
+
+## Simulate many model runs
+
+You can run any of the above models a specified number times to get the average statistics.
+```{r}
+# Run a basic simulation on matrix x many times and report average statistics
+# Set probability of infection to 0.25
+# Set number of runs to 2
+simulate_many_runs(0.25,x,2)
+```
+You can modify the parameters of this function the same as the simulate_sir() function to modify the simulation settings.
+
+## Generate multiple runs heatmap
+
+You can generate a heatmap of the results of multiple simulation runs to identify which cells are more likely to become infected.
+```{r}
+# Run a basic simulation on matrix x many times and generate heatmap
+# Set probability of infection to 0.25
+# Set number of runs to 2
+multiple_run_heatmap(0.25,x,2)
+```
+You can modify the parameters of this function the same as the simulate_sir() function to modify the simulation settings.
