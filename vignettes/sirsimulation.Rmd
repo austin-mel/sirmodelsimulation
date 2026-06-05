@@ -24,7 +24,7 @@ SIRSimulation uses `0` for susceptible cells and `1` for infected cells in the
 initial population matrix.
 
 ```{r initial-matrix}
-initial <- create_matrix(row = 10, col = 10, start_inf = 0.1)
+initial <- create_matrix(row = 10, col = 10, start_inf = 0.1, seed = 94128)
 initial
 ```
 
@@ -38,7 +38,7 @@ create_cntr_matrix(row = 10, col = 10)
 ## Run one SIR simulation
 
 ```{r one-run}
-result <- simulate_sir(prob_infect = 0.25, input_matrix = initial)
+result <- simulate_sir(prob_infect = 0.25, input_matrix = initial, seed = 94128)
 result$steps
 result$inf_prop
 result$final_matrix
@@ -55,13 +55,13 @@ result$history
 ## Run repeated simulations
 
 ```{r repeated-runs}
-simulate_many_runs(prob_infect = 0.25, input_matrix = initial, runs = 10)
+simulate_many_runs(prob_infect = 0.25, input_matrix = initial, runs = 10, seed = 94128)
 ```
 
 ## Sweep infection probabilities
 
 ```{r probability-sweep}
-simulate_inf_seq(input_matrix = initial, step = 0.1)
+simulate_inf_seq(input_matrix = initial, step = 0.1, seed = 94128)
 ```
 
 ## Create a recovered-cell heatmap
@@ -74,7 +74,8 @@ heatmap_counts <- multiple_run_heatmap(
   prob_infect = 0.25,
   input_matrix = initial,
   runs = 10,
-  plot = FALSE
+  plot = FALSE,
+  seed = 94128
 )
 heatmap_counts
 ```

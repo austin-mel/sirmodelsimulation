@@ -1,4 +1,4 @@
-validate_sir_inputs <- function(input_matrix, prob_infect) {
+validate_sir_inputs <- function(input_matrix, prob_infect, model = "SIR", imm_prob = 0.5) {
   if (!is.matrix(input_matrix)) {
     stop("input_matrix must be a matrix.", call. = FALSE)
   }
@@ -11,6 +11,21 @@ validate_sir_inputs <- function(input_matrix, prob_infect) {
   valid_states <- c(SUSCEPTIBLE, INFECTED, RECOVERED)
   if (any(!input_matrix %in% valid_states)) {
     stop("input_matrix contains invalid SIR state values.", call. = FALSE)
+  }
+
+  if (!model %in% c("SIR", "SIS", "SIRS")) {
+    stop('model must be "SIR", "SIS", or "SIRS".', call. = FALSE)
+  }
+
+  if (!is.numeric(imm_prob) || length(imm_prob) != 1 || is.na(imm_prob) ||
+      imm_prob < 0 || imm_prob > 1) {
+    stop("imm_prob must be a number between 0 and 1.", call. = FALSE)
+  }
+}
+
+set_optional_seed <- function(seed) {
+  if (!is.null(seed)) {
+    set.seed(seed)
   }
 }
 
@@ -51,6 +66,8 @@ plot_sir_matrix <- function(input, main = "SIR simulation matrix") {
 #'
 #' @param prob_infect Probability of infection spreading
 #' @param input Input matrix
+#' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
+#' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
 #'
 #' @return new_inf_matrix
 #'
@@ -59,8 +76,8 @@ plot_sir_matrix <- function(input, main = "SIR simulation matrix") {
 #'
 #' infect_step(0.25,x)
 #' @noRd
-infect_step <- function(prob_infect = 0.25, input) {
-  validate_sir_inputs(input, prob_infect)
+infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5) {
+  validate_sir_inputs(input, prob_infect, model, imm_prob)
 
   nr <- nrow(input)
   nc <- ncol(input)
@@ -79,7 +96,17 @@ infect_step <- function(prob_infect = 0.25, input) {
           }
         }
       } else if (input[i, j] == INFECTED) {
-        new_x[i, j] <- RECOVERED
+        if (model == "SIS") {
+          new_x[i, j] <- SUSCEPTIBLE
+        } else if (model == "SIRS") {
+          if (runif(1) < imm_prob) {
+            new_x[i, j] <- RECOVERED
+          } else {
+            new_x[i, j] <- SUSCEPTIBLE
+          }
+        } else {
+          new_x[i, j] <- RECOVERED
+        }
       }
     }
   }
@@ -91,6 +118,10 @@ infect_step <- function(prob_infect = 0.25, input) {
 #'
 #' @param prob_infect Probability of infection spreading
 #' @param input_matrix Input matrix
+#' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
+#' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
+#' @param plot Plot each simulation step
+#' @param seed Optional random seed for reproducible simulation
 #'
 #' @return Results List
 #'
@@ -99,8 +130,9 @@ infect_step <- function(prob_infect = 0.25, input) {
 #'
 #' simulate_sir(0.4,x)
 #' @export
-simulate_sir <- function(prob_infect = 0.25, input_matrix, plot = FALSE) {
-  validate_sir_inputs(input_matrix, prob_infect)
+simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_prob = 0.5, plot = FALSE, seed = NULL) {
+  validate_sir_inputs(input_matrix, prob_infect, model, imm_prob)
+  set_optional_seed(seed)
 
   x <- input_matrix
   step_count <- 0
@@ -111,7 +143,7 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, plot = FALSE) {
   }
 
   while (any(x == INFECTED)) {
-    x <- infect_step(prob_infect, x)
+    x <- infect_step(prob_infect, x, model = model, imm_prob = imm_prob)
     step_count <- step_count + 1
     history <- rbind(history, sir_counts(x, step_count))
 
@@ -138,6 +170,9 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, plot = FALSE) {
 #' @param prob_infect Probability of infection spreading
 #' @param input_matrix Input matrix
 #' @param runs Number of simulation runs
+#' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
+#' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
+#' @param seed Optional random seed for reproducible simulations
 #'
 #' @return Results Dataframe
 #'
@@ -146,12 +181,13 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, plot = FALSE) {
 #'
 #' simulate_many_runs(0.25,x,10)
 #' @export
-simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10) {
-  validate_sir_inputs(input_matrix, prob_infect)
+simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10, model = "SIR", imm_prob = 0.5, seed = NULL) {
+  validate_sir_inputs(input_matrix, prob_infect, model, imm_prob)
+  set_optional_seed(seed)
 
   simulations <- replicate(
     runs,
-    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix),
+    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix, model = model, imm_prob = imm_prob),
     simplify = FALSE
   )
 
@@ -166,6 +202,9 @@ simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10) {
 #'
 #' @param input_matrix Input matrix
 #' @param step Value to step by in sequence of infection probabilities
+#' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
+#' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
+#' @param seed Optional random seed for reproducible simulations
 #'
 #' @return Results Dataframe
 #'
@@ -174,11 +213,12 @@ simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10) {
 #'
 #' simulate_inf_seq(x,0.1)
 #' @export
-simulate_inf_seq <- function(input_matrix, step = 0.1) {
-  validate_sir_inputs(input_matrix, 0)
+simulate_inf_seq <- function(input_matrix, step = 0.1, model = "SIR", imm_prob = 0.5, seed = NULL) {
+  validate_sir_inputs(input_matrix, 0, model, imm_prob)
+  set_optional_seed(seed)
 
   prop_infect <- seq(from = 0.1, to = 0.999, by = step)
-  results <- lapply(prop_infect, simulate_sir, input_matrix = input_matrix)
+  results <- lapply(prop_infect, simulate_sir, input_matrix = input_matrix, model = model, imm_prob = imm_prob)
 
   data.frame(
     prob_infection = vapply(results, `[[`, numeric(1), "prob_infect"),
@@ -192,7 +232,10 @@ simulate_inf_seq <- function(input_matrix, step = 0.1) {
 #' @param prob_infect Probability of infection spreading
 #' @param input_matrix Input matrix
 #' @param runs Number of simulation runs
+#' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
+#' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
 #' @param plot Plot the heatmap
+#' @param seed Optional random seed for reproducible simulations
 #'
 #' @return Matrix of recovered counts by cell
 #'
@@ -201,12 +244,13 @@ simulate_inf_seq <- function(input_matrix, step = 0.1) {
 #'
 #' multiple_run_heatmap(0.25,x,10)
 #' @export
-multiple_run_heatmap <- function(prob_infect = 0.25, input_matrix, runs = 10, plot = FALSE) {
-  validate_sir_inputs(input_matrix, prob_infect)
+multiple_run_heatmap <- function(prob_infect = 0.25, input_matrix, runs = 10, model = "SIR", imm_prob = 0.5, plot = FALSE, seed = NULL) {
+  validate_sir_inputs(input_matrix, prob_infect, model, imm_prob)
+  set_optional_seed(seed)
 
   simulations <- replicate(
     runs,
-    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix),
+    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix, model = model, imm_prob = imm_prob),
     simplify = FALSE
   )
 

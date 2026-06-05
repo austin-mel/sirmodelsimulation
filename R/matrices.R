@@ -3,6 +3,7 @@
 #' @param row Number of rows for matrix
 #' @param col Number of columns for matrix
 #' @param start_inf Probability that a cell will start as infected
+#' @param seed Optional random seed for reproducible sampling
 #'
 #' @return Infection Matrix
 #'
@@ -10,7 +11,11 @@
 #' create_matrix(5,5)
 #' create_matrix(15,15,0.25)
 #' @export
-create_matrix <- function(row, col, start_inf = 0.125) {
+create_matrix <- function(row, col, start_inf = 0.125, seed = NULL) {
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+
   matrix(
     sample(c(0, 1), row * col, replace = TRUE, prob = c(1 - start_inf, start_inf)),
     nrow = row,
