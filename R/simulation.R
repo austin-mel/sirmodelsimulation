@@ -1,4 +1,4 @@
-validate_sir_inputs <- function(input_matrix, prob_infect, model = "SIR", imm_prob = 0.5) {
+validate_sir_inputs <- function(input_matrix, prob_infect, model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15) {
   if (!is.matrix(input_matrix)) {
     stop("input_matrix must be a matrix.", call. = FALSE)
   }
@@ -8,7 +8,7 @@ validate_sir_inputs <- function(input_matrix, prob_infect, model = "SIR", imm_pr
     stop("prob_infect must be a number between 0 and 1.", call. = FALSE)
   }
 
-  valid_states <- c(SUSCEPTIBLE, INFECTED, RECOVERED)
+  valid_states <- c(SUSCEPTIBLE, INFECTED, RECOVERED, DECEASED)
   if (any(!input_matrix %in% valid_states)) {
     stop("input_matrix contains invalid SIR state values.", call. = FALSE)
   }
@@ -20,6 +20,15 @@ validate_sir_inputs <- function(input_matrix, prob_infect, model = "SIR", imm_pr
   if (!is.numeric(imm_prob) || length(imm_prob) != 1 || is.na(imm_prob) ||
       imm_prob < 0 || imm_prob > 1) {
     stop("imm_prob must be a number between 0 and 1.", call. = FALSE)
+  }
+
+  if (!is.logical(allow_death) || length(allow_death) != 1 || is.na(allow_death)) {
+    stop("allow_death must be TRUE or FALSE.", call. = FALSE)
+  }
+
+  if (!is.numeric(fat_prob) || length(fat_prob) != 1 || is.na(fat_prob) ||
+      fat_prob < 0 || fat_prob > 1) {
+    stop("fat_prob must be a number between 0 and 1.", call. = FALSE)
   }
 }
 
@@ -36,6 +45,22 @@ sir_counts <- function(x, step) {
     infected = sum(x == INFECTED),
     recovered = sum(x == RECOVERED)
   )
+}
+
+next_post_infection_state <- function(model, imm_prob, allow_death, fat_prob) {
+  if (allow_death && runif(1) < fat_prob) {
+    return(DECEASED)
+  }
+
+  if (model == "SIS") {
+    return(SUSCEPTIBLE)
+  }
+
+  if (model == "SIRS" && runif(1) >= imm_prob) {
+    return(SUSCEPTIBLE)
+  }
+
+  RECOVERED
 }
 
 plot_sir_matrix <- function(input, main = "SIR simulation matrix") {
@@ -68,6 +93,8 @@ plot_sir_matrix <- function(input, main = "SIR simulation matrix") {
 #' @param input Input matrix
 #' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
+#' @param allow_death Enable mortality after infection
+#' @param fat_prob Probability that an infected cell becomes deceased
 #'
 #' @return new_inf_matrix
 #'
@@ -76,8 +103,8 @@ plot_sir_matrix <- function(input, main = "SIR simulation matrix") {
 #'
 #' infect_step(0.25,x)
 #' @noRd
-infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5) {
-  validate_sir_inputs(input, prob_infect, model, imm_prob)
+infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15) {
+  validate_sir_inputs(input, prob_infect, model, imm_prob, allow_death, fat_prob)
 
   nr <- nrow(input)
   nc <- ncol(input)
@@ -96,17 +123,7 @@ infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5
           }
         }
       } else if (input[i, j] == INFECTED) {
-        if (model == "SIS") {
-          new_x[i, j] <- SUSCEPTIBLE
-        } else if (model == "SIRS") {
-          if (runif(1) < imm_prob) {
-            new_x[i, j] <- RECOVERED
-          } else {
-            new_x[i, j] <- SUSCEPTIBLE
-          }
-        } else {
-          new_x[i, j] <- RECOVERED
-        }
+        new_x[i, j] <- next_post_infection_state(model, imm_prob, allow_death, fat_prob)
       }
     }
   }
@@ -120,6 +137,8 @@ infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5
 #' @param input_matrix Input matrix
 #' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
+#' @param allow_death Enable mortality after infection
+#' @param fat_prob Probability that an infected cell becomes deceased
 #' @param plot Plot each simulation step
 #' @param seed Optional random seed for reproducible simulation
 #'
@@ -130,8 +149,8 @@ infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5
 #'
 #' simulate_sir(0.4,x)
 #' @export
-simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_prob = 0.5, plot = FALSE, seed = NULL) {
-  validate_sir_inputs(input_matrix, prob_infect, model, imm_prob)
+simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15, plot = FALSE, seed = NULL) {
+  validate_sir_inputs(input_matrix, prob_infect, model, imm_prob, allow_death, fat_prob)
   set_optional_seed(seed)
 
   x <- input_matrix
@@ -143,7 +162,7 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_pr
   }
 
   while (any(x == INFECTED)) {
-    x <- infect_step(prob_infect, x, model = model, imm_prob = imm_prob)
+    x <- infect_step(prob_infect, x, model = model, imm_prob = imm_prob, allow_death = allow_death, fat_prob = fat_prob)
     step_count <- step_count + 1
     history <- rbind(history, sir_counts(x, step_count))
 
@@ -172,6 +191,8 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_pr
 #' @param runs Number of simulation runs
 #' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
+#' @param allow_death Enable mortality after infection
+#' @param fat_prob Probability that an infected cell becomes deceased
 #' @param seed Optional random seed for reproducible simulations
 #'
 #' @return Results Dataframe
@@ -181,13 +202,13 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_pr
 #'
 #' simulate_many_runs(0.25,x,10)
 #' @export
-simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10, model = "SIR", imm_prob = 0.5, seed = NULL) {
-  validate_sir_inputs(input_matrix, prob_infect, model, imm_prob)
+simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10, model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15, seed = NULL) {
+  validate_sir_inputs(input_matrix, prob_infect, model, imm_prob, allow_death, fat_prob)
   set_optional_seed(seed)
 
   simulations <- replicate(
     runs,
-    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix, model = model, imm_prob = imm_prob),
+    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix, model = model, imm_prob = imm_prob, allow_death = allow_death, fat_prob = fat_prob),
     simplify = FALSE
   )
 
@@ -204,6 +225,8 @@ simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10, mode
 #' @param step Value to step by in sequence of infection probabilities
 #' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
+#' @param allow_death Enable mortality after infection
+#' @param fat_prob Probability that an infected cell becomes deceased
 #' @param seed Optional random seed for reproducible simulations
 #'
 #' @return Results Dataframe
@@ -213,12 +236,12 @@ simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10, mode
 #'
 #' simulate_inf_seq(x,0.1)
 #' @export
-simulate_inf_seq <- function(input_matrix, step = 0.1, model = "SIR", imm_prob = 0.5, seed = NULL) {
-  validate_sir_inputs(input_matrix, 0, model, imm_prob)
+simulate_inf_seq <- function(input_matrix, step = 0.1, model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15, seed = NULL) {
+  validate_sir_inputs(input_matrix, 0, model, imm_prob, allow_death, fat_prob)
   set_optional_seed(seed)
 
   prop_infect <- seq(from = 0.1, to = 0.999, by = step)
-  results <- lapply(prop_infect, simulate_sir, input_matrix = input_matrix, model = model, imm_prob = imm_prob)
+  results <- lapply(prop_infect, simulate_sir, input_matrix = input_matrix, model = model, imm_prob = imm_prob, allow_death = allow_death, fat_prob = fat_prob)
 
   data.frame(
     prob_infection = vapply(results, `[[`, numeric(1), "prob_infect"),
@@ -234,6 +257,8 @@ simulate_inf_seq <- function(input_matrix, step = 0.1, model = "SIR", imm_prob =
 #' @param runs Number of simulation runs
 #' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
+#' @param allow_death Enable mortality after infection
+#' @param fat_prob Probability that an infected cell becomes deceased
 #' @param plot Plot the heatmap
 #' @param seed Optional random seed for reproducible simulations
 #'
@@ -244,13 +269,13 @@ simulate_inf_seq <- function(input_matrix, step = 0.1, model = "SIR", imm_prob =
 #'
 #' multiple_run_heatmap(0.25,x,10)
 #' @export
-multiple_run_heatmap <- function(prob_infect = 0.25, input_matrix, runs = 10, model = "SIR", imm_prob = 0.5, plot = FALSE, seed = NULL) {
-  validate_sir_inputs(input_matrix, prob_infect, model, imm_prob)
+multiple_run_heatmap <- function(prob_infect = 0.25, input_matrix, runs = 10, model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15, plot = FALSE, seed = NULL) {
+  validate_sir_inputs(input_matrix, prob_infect, model, imm_prob, allow_death, fat_prob)
   set_optional_seed(seed)
 
   simulations <- replicate(
     runs,
-    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix, model = model, imm_prob = imm_prob),
+    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix, model = model, imm_prob = imm_prob, allow_death = allow_death, fat_prob = fat_prob),
     simplify = FALSE
   )
 
