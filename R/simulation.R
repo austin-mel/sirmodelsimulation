@@ -1,11 +1,56 @@
+validate_sir_inputs <- function(input_matrix, prob_infect) {
+  if (!is.matrix(input_matrix)) {
+    stop("input_matrix must be a matrix.", call. = FALSE)
+  }
+
+  if (!is.numeric(prob_infect) || length(prob_infect) != 1 || is.na(prob_infect) ||
+      prob_infect < 0 || prob_infect > 1) {
+    stop("prob_infect must be a number between 0 and 1.", call. = FALSE)
+  }
+
+  valid_states <- c(SUSCEPTIBLE, INFECTED, RECOVERED)
+  if (any(!input_matrix %in% valid_states)) {
+    stop("input_matrix contains invalid SIR state values.", call. = FALSE)
+  }
+}
+
+sir_counts <- function(x, step) {
+  data.frame(
+    step = step,
+    susceptible = sum(x == SUSCEPTIBLE),
+    infected = sum(x == INFECTED),
+    recovered = sum(x == RECOVERED)
+  )
+}
+
+plot_sir_matrix <- function(input, main = "SIR simulation matrix") {
+  state_colors <- c("white", "red", "grey", "black")
+  state_labels <- c("Susceptible", "Infected", "Recovered", "Deceased")
+  display_matrix <- apply(input, 2, rev)
+
+  graphics::par(yaxt = "n", xaxt = "n", ann = FALSE)
+  graphics::image(
+    seq_len(ncol(input)),
+    seq_len(nrow(input)),
+    t(display_matrix),
+    zlim = c(SUSCEPTIBLE, DECEASED),
+    col = state_colors
+  )
+  graphics::title(main)
+  graphics::legend(
+    "bottom",
+    legend = state_labels,
+    fill = state_colors,
+    horiz = TRUE,
+    inset = c(0, -0.15),
+    xpd = TRUE
+  )
+}
+
 #' Single time step in simulation
 #'
 #' @param prob_infect Probability of infection spreading
 #' @param input Input matrix
-#' @param auto_immunity Enable auto immunity after infection
-#' @param imm_prob Probability of getting immunity
-#' @param allow_death Enable death
-#' @param fat_prob Probability of fatality
 #'
 #' @return new_inf_matrix
 #'
@@ -13,109 +58,39 @@
 #' x <- create_matrix(5,5)
 #'
 #' infect_step(0.25,x)
-#' infect_step(0.25,x,FALSE,0.25)
-#' infect_step(0.25,x,FALSE,0.3,FALSE)
-#' infect_step(0.25,x,FALSE,0.25,TRUE,0.15)
-#' infect_step(0.25,x,TRUE,1.0,TRUE,0.09)
 #' @noRd
-infect_step <- function(prob_infect = 0.25, input, auto_immunity = FALSE, imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15) {
+infect_step <- function(prob_infect = 0.25, input) {
+  validate_sir_inputs(input, prob_infect)
+
   nr <- nrow(input)
   nc <- ncol(input)
   input_pad <- pad(input)
-  new_x <- input_pad
+  new_x <- input
 
-  midrows <- 2:(nr + 1)
-  midcols <- 2:(nc + 1)
-  for (i in midrows) {
-    for (j in midcols) {
-      if (input_pad[i, j] == 0) {
-        count <- count_infected_neighbors(input_pad, i, j)
-        if (0 < count) {
-          prob0 <- (1 - prob_infect)^count
-          infect <- sample(c(TRUE, FALSE), prob = c(1 - prob0, prob0))
-          if (infect[1]) {
-            new_x[i, j] <- 1
+  for (i in seq_len(nr)) {
+    for (j in seq_len(nc)) {
+      if (input[i, j] == SUSCEPTIBLE) {
+        infected_neighbors <- count_infected_neighbors(input_pad, i + 1, j + 1)
+
+        if (infected_neighbors > 0) {
+          infection_probability <- 1 - (1 - prob_infect)^infected_neighbors
+          if (runif(1) < infection_probability) {
+            new_x[i, j] <- INFECTED
           }
         }
+      } else if (input[i, j] == INFECTED) {
+        new_x[i, j] <- RECOVERED
       }
     }
   }
 
-  # If auto immunity is disabled & death is disabled
-  # Allow infected cells to become Susceptible or Immune after infection
-  if (identical(FALSE, auto_immunity) && identical(FALSE, allow_death)) {
-    new_x[input_pad == 1] <- 3
-    for (y in midrows) {
-      for (z in midcols) {
-        if (new_x[y, z] == 3) {
-          result <- sample(0:1, 1, prob = c(1 - imm_prob, imm_prob))
-          if (result == 1) {
-            result <- 2
-          }
-          new_x[y, z] <- result
-        }
-      }
-    }
-  }
-  # If auto immunity is disabled & death is enabled
-  # Allow infected cells to become Susceptible, Immune, or Deceased after infection
-  else if (identical(FALSE, auto_immunity) && identical(TRUE, allow_death)) {
-    new_x[input_pad == 1] <- 4
-
-    for (y in midrows) {
-      for (z in midcols) {
-        if (new_x[y, z] == 4) {
-          result <- sample(3:4, 1, prob = c(fat_prob, 1 - fat_prob))
-          if (result == 4) {
-            result <- sample(1:2, 1, prob = c(imm_prob, 1 - imm_prob))
-            if (result == 1) {
-              result <- 0
-            }
-          }
-          new_x[y, z] <- result
-        }
-      }
-    }
-  }
-  # If auto immunity is enabled & death is enabled
-  # Allow infected cells to become Immune or Deceased after infection
-  else if (identical(TRUE, auto_immunity) && identical(TRUE, allow_death)) {
-    new_x[input_pad == 1] <- 4
-
-    for (y in midrows) {
-      for (z in midcols) {
-        if (new_x[y, z] == 4) {
-          result <- sample(3:4, 1, prob = c(fat_prob, 1 - fat_prob))
-          if (result == 4) {
-            result <- 2
-          }
-          new_x[y, z] <- result
-        }
-      }
-    }
-  }
-  # Else auto immunity is enabled & death is disabled
-  else {
-    new_x[input_pad == 1] <- 2
-  }
-
-  completed_step <- new_x[midrows, midcols]
-
-  # Visualize matrix
-  dis_plot(completed_step)
-
-  # Return matrix
-  return(completed_step)
+  new_x
 }
 
 #' Run simulation of infection spread until there are no longer any infected cells
 #'
 #' @param prob_infect Probability of infection spreading
 #' @param input_matrix Input matrix
-#' @param auto_immunity Enable auto immunity after infection
-#' @param imm_prob Probability of getting immunity
-#' @param allow_death Enable death
-#' @param fat_prob Probability of fatality
 #'
 #' @return Results List
 #'
@@ -123,112 +98,39 @@ infect_step <- function(prob_infect = 0.25, input, auto_immunity = FALSE, imm_pr
 #' x <- create_matrix(5,5)
 #'
 #' simulate_sir(0.4,x)
-#' simulate_sir(0.15,x,TRUE)
-#' simulate_sir(0.35,x,FALSE,0.5,FALSE)
-#' simulate_sir(0.55,x,FALSE,0.35,TRUE,0.1)
 #' @export
-simulate_sir <- function(prob_infect = 0.25, input_matrix, auto_immunity = FALSE, imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15) {
+simulate_sir <- function(prob_infect = 0.25, input_matrix, plot = FALSE) {
+  validate_sir_inputs(input_matrix, prob_infect)
+
   x <- input_matrix
-
   step_count <- 0
+  history <- sir_counts(x, step_count)
 
-  while (any(x == 1)) {
-    # If allow_death == F require only immunity probability argument
-    if (identical(FALSE, allow_death)) {
-      x <- infect_step(prob_infect, x, auto_immunity, imm_prob)
-    }
-    # If allow_death == T require immunity probability and fatality probability argument
-    else {
-      x <- infect_step(prob_infect, x, auto_immunity, imm_prob, allow_death, fat_prob)
-    }
+  if (isTRUE(plot)) {
+    plot_sir_matrix(x, main = paste("SIR simulation step", step_count))
+  }
 
-    # Increment step count for each run
+  while (any(x == INFECTED)) {
+    x <- infect_step(prob_infect, x)
     step_count <- step_count + 1
+    history <- rbind(history, sir_counts(x, step_count))
 
-    Sys.sleep(0.1)
+    if (isTRUE(plot)) {
+      plot_sir_matrix(x, main = paste("SIR simulation step", step_count))
+    }
   }
 
-  num_inf <- sum(x == 1) + sum(x == 2)
-  num_healthy <- sum(x == 0)
+  num_recovered <- sum(x == RECOVERED)
   num_total <- ncol(x) * nrow(x)
+  inf_prop <- num_recovered / num_total
 
-  inf_prop <- num_inf / num_total
-
-  # Print list of results
-  if (identical(FALSE, auto_immunity) && identical(FALSE, allow_death)) {
-    list(steps = step_count, prob_infect = prob_infect, inf_prop = inf_prop, imm_prob = imm_prob, final_matrix = x)
-  }
-  else if (identical(FALSE, auto_immunity) && identical(TRUE, allow_death)) {
-    list(steps = step_count, prob_infect = prob_infect, inf_prop = inf_prop, imm_prob = imm_prob, fat_prob = fat_prob, final_matrix = x)
-  }
-  else if (identical(TRUE, auto_immunity) && identical(TRUE, allow_death)) {
-    list(steps = step_count, prob_infect = prob_infect, inf_prop = inf_prop, fat_prob = fat_prob, final_matrix = x)
-  }
-  else {
-    list(steps = step_count, prob_infect = prob_infect, inf_prop = inf_prop, final_matrix = x)
-  }
-}
-
-#' Run a given simulation multiple times using a sequence of increasing infection probabilities.
-#'
-#' @param input_matrix Input matrix
-#' @param step Value to step by in sequence of infection probabilities
-#' @param auto_immunity Enable auto immunity after infection
-#' @param imm_prob Probability of getting immunity
-#' @param allow_death Enable death
-#' @param fat_prob Probability of fatality
-#'
-#' @return Results Dataframe
-#'
-#' @examples
-#' x <- create_matrix(5,5)
-#'
-#' simulate_inf_seq(x,0.1,TRUE)
-#' simulate_inf_seq(x,0.2,FALSE,0.35,FALSE)
-#' simulate_inf_seq(x,0.1,FALSE,0.35,TRUE,0.12)
-#' @export
-simulate_inf_seq <- function(input_matrix, step = 0.1, auto_immunity = FALSE, imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15) {
-  prop_infect <- seq(from = 0.1, to = 0.999, by = step)
-
-  # Use each probability in defined sequence in a given simulation run
-  # Save results via list
-  results <- lapply(prop_infect, simulate_sir, input_matrix = input_matrix, auto_immunity = auto_immunity, imm_prob = imm_prob, allow_death = allow_death, fat_prob = fat_prob)
-
-  # Save results in data frame
-  if (identical(FALSE, auto_immunity) && identical(FALSE, allow_death)) {
-    results2 <- data.frame(
-      prob_infection = sapply(results, `[[`, "prob_infect"),
-      total_steps = sapply(results, `[[`, "steps"),
-      infected_prop = sapply(results, `[[`, "inf_prop"),
-      immunity_prob = sapply(results, `[[`, "imm_prob")
-    )
-  }
-  else if (identical(FALSE, auto_immunity) && identical(TRUE, allow_death)) {
-    results2 <- data.frame(
-      prob_infection = sapply(results, `[[`, "prob_infect"),
-      total_steps = sapply(results, `[[`, "steps"),
-      infected_prop = sapply(results, `[[`, "inf_prop"),
-      immunity_prob = sapply(results, `[[`, "imm_prob"),
-      fatality_prob = sapply(results, `[[`, "fat_prob")
-    )
-  }
-  else if (identical(TRUE, auto_immunity) && identical(TRUE, allow_death)) {
-    results2 <- data.frame(
-      prob_infection = sapply(results, `[[`, "prob_infect"),
-      total_steps = sapply(results, `[[`, "steps"),
-      infected_prop = sapply(results, `[[`, "inf_prop"),
-      fatality_prob = sapply(results, `[[`, "fat_prob")
-    )
-  }
-  else {
-    results2 <- data.frame(
-      prob_infection = sapply(results, `[[`, "prob_infect"),
-      total_steps = sapply(results, `[[`, "steps"),
-      infected_prop = sapply(results, `[[`, "inf_prop")
-    )
-  }
-
-  print(results2)
+  list(
+    steps = step_count,
+    prob_infect = prob_infect,
+    inf_prop = inf_prop,
+    final_matrix = x,
+    history = history
+  )
 }
 
 #' Run a given simulation multiple times and get the average steps and average proportion of cells infected.
@@ -236,10 +138,6 @@ simulate_inf_seq <- function(input_matrix, step = 0.1, auto_immunity = FALSE, im
 #' @param prob_infect Probability of infection spreading
 #' @param input_matrix Input matrix
 #' @param runs Number of simulation runs
-#' @param auto_immunity Enable auto immunity after infection
-#' @param imm_prob Probability of getting immunity
-#' @param allow_death Enable death
-#' @param fat_prob Probability of fatality
 #'
 #' @return Results Dataframe
 #'
@@ -247,31 +145,86 @@ simulate_inf_seq <- function(input_matrix, step = 0.1, auto_immunity = FALSE, im
 #' x <- create_matrix(5,5)
 #'
 #' simulate_many_runs(0.25,x,10)
-#' simulate_many_runs(0.15,x,10,TRUE)
-#' simulate_many_runs(0.35,x,10,FALSE,0.25,FALSE)
-#' simulate_many_runs(0.25,x,10,FALSE,0.4,TRUE,0.08)
 #' @export
-simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10, auto_immunity = FALSE, imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15) {
-  simulations <- replicate(runs, simulate_sir(prob_infect, input_matrix, allow_death = allow_death, auto_immunity = auto_immunity, imm_prob = imm_prob, fat_prob = fat_prob), simplify = FALSE)
+simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10) {
+  validate_sir_inputs(input_matrix, prob_infect)
 
-  sx <- 0
-  sp <- 0
-
-  # Total up the steps and proportion of infected cells from every simulation
-  for (s in simulations) {
-    sx <- sx + s[["steps"]]
-    sp <- sp + s[["inf_prop"]]
-  }
-
-  steps_avg <- sx / runs
-  prop_avg <- sp / runs
-
-  # Save results in data frame
-  results <- data.frame(
-    total_runs = runs,
-    avg_steps = steps_avg,
-    avg_prop_infected = prop_avg
+  simulations <- replicate(
+    runs,
+    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix),
+    simplify = FALSE
   )
 
-  print(results)
+  data.frame(
+    total_runs = runs,
+    avg_steps = mean(vapply(simulations, `[[`, numeric(1), "steps")),
+    avg_prop_infected = mean(vapply(simulations, `[[`, numeric(1), "inf_prop"))
+  )
+}
+
+#' Run a given simulation multiple times using a sequence of increasing infection probabilities.
+#'
+#' @param input_matrix Input matrix
+#' @param step Value to step by in sequence of infection probabilities
+#'
+#' @return Results Dataframe
+#'
+#' @examples
+#' x <- create_matrix(5,5)
+#'
+#' simulate_inf_seq(x,0.1)
+#' @export
+simulate_inf_seq <- function(input_matrix, step = 0.1) {
+  validate_sir_inputs(input_matrix, 0)
+
+  prop_infect <- seq(from = 0.1, to = 0.999, by = step)
+  results <- lapply(prop_infect, simulate_sir, input_matrix = input_matrix)
+
+  data.frame(
+    prob_infection = vapply(results, `[[`, numeric(1), "prob_infect"),
+    total_steps = vapply(results, `[[`, numeric(1), "steps"),
+    infected_prop = vapply(results, `[[`, numeric(1), "inf_prop")
+  )
+}
+
+#' Run a given simulation multiple times to summarize which cells were previously infected
+#'
+#' @param prob_infect Probability of infection spreading
+#' @param input_matrix Input matrix
+#' @param runs Number of simulation runs
+#' @param plot Plot the heatmap
+#'
+#' @return Matrix of recovered counts by cell
+#'
+#' @examples
+#' x <- create_matrix(5,5)
+#'
+#' multiple_run_heatmap(0.25,x,10)
+#' @export
+multiple_run_heatmap <- function(prob_infect = 0.25, input_matrix, runs = 10, plot = FALSE) {
+  validate_sir_inputs(input_matrix, prob_infect)
+
+  simulations <- replicate(
+    runs,
+    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix),
+    simplify = FALSE
+  )
+
+  heatmap_matrix <- matrix(0, nrow = nrow(input_matrix), ncol = ncol(input_matrix))
+  for (simulation in simulations) {
+    heatmap_matrix <- heatmap_matrix + (simulation[["final_matrix"]] == RECOVERED)
+  }
+
+  if (isTRUE(plot)) {
+    display_matrix <- apply(heatmap_matrix, 2, rev)
+    graphics::par(yaxt = "n", xaxt = "n", ann = FALSE)
+    graphics::image(
+      seq_len(ncol(heatmap_matrix)),
+      seq_len(nrow(heatmap_matrix)),
+      t(display_matrix)
+    )
+    graphics::title(paste("Recovered cell count across", runs, "SIR runs"))
+  }
+
+  heatmap_matrix
 }

@@ -11,8 +11,11 @@
 #' create_matrix(15,15,0.25)
 #' @export
 create_matrix <- function(row, col, start_inf = 0.125) {
-  set.seed(94128)
-  inf_matrix <- matrix(sample(c(0, 1), row * col, replace = TRUE, prob = c(1 - start_inf, start_inf)), nrow = row, ncol = col)
+  matrix(
+    sample(c(0, 1), row * col, replace = TRUE, prob = c(1 - start_inf, start_inf)),
+    nrow = row,
+    ncol = col
+  )
 }
 
 #' Create a matrix of any size with only the four corners starting as infected cells
@@ -46,7 +49,7 @@ create_crnr_matrix <- function(row, col) {
 #' @export
 create_cntr_matrix <- function(row, col) {
   inf_matrix <- matrix(0, nrow = row, ncol = col)
-  inf_matrix[(row / 2), (col / 2)] <- 1
+  inf_matrix[ceiling(row / 2), ceiling(col / 2)] <- 1
   inf_matrix
 }
 
@@ -64,7 +67,7 @@ create_cntr_matrix <- function(row, col) {
 pad <- function(input) {
   nr <- nrow(input)
   nc <- ncol(input)
-  input_pad <- matrix(0, nrow = nr + 2, ncol = nc + 2)
+  input_pad <- matrix(SUSCEPTIBLE, nrow = nr + 2, ncol = nc + 2)
   input_pad[2:(nr + 1), 2:(nc + 1)] <- input
   input_pad
 }
