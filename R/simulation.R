@@ -38,6 +38,15 @@ set_optional_seed <- function(seed) {
   }
 }
 
+model_options <- function(model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15) {
+  list(
+    model = model,
+    imm_prob = imm_prob,
+    allow_death = allow_death,
+    fat_prob = fat_prob
+  )
+}
+
 sir_counts <- function(x, step) {
   data.frame(
     step = step,
@@ -47,16 +56,16 @@ sir_counts <- function(x, step) {
   )
 }
 
-next_post_infection_state <- function(model, imm_prob, allow_death, fat_prob) {
-  if (allow_death && runif(1) < fat_prob) {
+next_post_infection_state <- function(options) {
+  if (options$allow_death && stats::runif(1) < options$fat_prob) {
     return(DECEASED)
   }
 
-  if (model == "SIS") {
+  if (options$model == "SIS") {
     return(SUSCEPTIBLE)
   }
 
-  if (model == "SIRS" && runif(1) >= imm_prob) {
+  if (options$model == "SIRS" && stats::runif(1) >= options$imm_prob) {
     return(SUSCEPTIBLE)
   }
 
@@ -93,8 +102,8 @@ plot_sir_matrix <- function(input, main = "SIR simulation matrix") {
 #' @param input Input matrix
 #' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
-#' @param allow_death Enable mortality after infection
-#' @param fat_prob Probability that an infected cell becomes deceased
+#' @param allow_death Enable optional mortality after infection.
+#' @param fat_prob Probability that an infected cell becomes deceased when mortality is enabled.
 #'
 #' @return new_inf_matrix
 #'
@@ -105,6 +114,7 @@ plot_sir_matrix <- function(input, main = "SIR simulation matrix") {
 #' @noRd
 infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15) {
   validate_sir_inputs(input, prob_infect, model, imm_prob, allow_death, fat_prob)
+  options <- model_options(model, imm_prob, allow_death, fat_prob)
 
   nr <- nrow(input)
   nc <- ncol(input)
@@ -118,12 +128,12 @@ infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5
 
         if (infected_neighbors > 0) {
           infection_probability <- 1 - (1 - prob_infect)^infected_neighbors
-          if (runif(1) < infection_probability) {
+          if (stats::runif(1) < infection_probability) {
             new_x[i, j] <- INFECTED
           }
         }
       } else if (input[i, j] == INFECTED) {
-        new_x[i, j] <- next_post_infection_state(model, imm_prob, allow_death, fat_prob)
+        new_x[i, j] <- next_post_infection_state(options)
       }
     }
   }
@@ -134,11 +144,12 @@ infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5
 #' Run simulation of infection spread until there are no longer any infected cells
 #'
 #' @param prob_infect Probability of infection spreading
-#' @param input_matrix Input matrix
-#' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
+#' @param input_matrix Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.
+#' @param model Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to "SIR".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
-#' @param allow_death Enable mortality after infection
-#' @param fat_prob Probability that an infected cell becomes deceased
+#'   Infected cells that do not recover become susceptible. Ignored by SIR and SIS.
+#' @param allow_death Enable optional mortality after infection.
+#' @param fat_prob Probability that an infected cell becomes deceased when mortality is enabled.
 #' @param plot Plot each simulation step
 #' @param seed Optional random seed for reproducible simulation
 #'
@@ -187,12 +198,13 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_pr
 #' Run a given simulation multiple times and get the average steps and average proportion of cells infected.
 #'
 #' @param prob_infect Probability of infection spreading
-#' @param input_matrix Input matrix
+#' @param input_matrix Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.
 #' @param runs Number of simulation runs
-#' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
+#' @param model Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to "SIR".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
-#' @param allow_death Enable mortality after infection
-#' @param fat_prob Probability that an infected cell becomes deceased
+#'   Infected cells that do not recover become susceptible. Ignored by SIR and SIS.
+#' @param allow_death Enable optional mortality after infection.
+#' @param fat_prob Probability that an infected cell becomes deceased when mortality is enabled.
 #' @param seed Optional random seed for reproducible simulations
 #'
 #' @return Results Dataframe
@@ -221,12 +233,13 @@ simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10, mode
 
 #' Run a given simulation multiple times using a sequence of increasing infection probabilities.
 #'
-#' @param input_matrix Input matrix
+#' @param input_matrix Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.
 #' @param step Value to step by in sequence of infection probabilities
-#' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
+#' @param model Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to "SIR".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
-#' @param allow_death Enable mortality after infection
-#' @param fat_prob Probability that an infected cell becomes deceased
+#'   Infected cells that do not recover become susceptible. Ignored by SIR and SIS.
+#' @param allow_death Enable optional mortality after infection.
+#' @param fat_prob Probability that an infected cell becomes deceased when mortality is enabled.
 #' @param seed Optional random seed for reproducible simulations
 #'
 #' @return Results Dataframe
@@ -253,12 +266,13 @@ simulate_inf_seq <- function(input_matrix, step = 0.1, model = "SIR", imm_prob =
 #' Run a given simulation multiple times to summarize which cells were previously infected
 #'
 #' @param prob_infect Probability of infection spreading
-#' @param input_matrix Input matrix
+#' @param input_matrix Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.
 #' @param runs Number of simulation runs
-#' @param model Simulation model. Use "SIR", "SIS", or "SIRS".
+#' @param model Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to "SIR".
 #' @param imm_prob Probability that an infected cell becomes recovered in SIRS.
-#' @param allow_death Enable mortality after infection
-#' @param fat_prob Probability that an infected cell becomes deceased
+#'   Infected cells that do not recover become susceptible. Ignored by SIR and SIS.
+#' @param allow_death Enable optional mortality after infection.
+#' @param fat_prob Probability that an infected cell becomes deceased when mortality is enabled.
 #' @param plot Plot the heatmap
 #' @param seed Optional random seed for reproducible simulations
 #'

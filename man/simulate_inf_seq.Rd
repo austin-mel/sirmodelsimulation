@@ -7,13 +7,26 @@
 simulate_inf_seq(
   input_matrix,
   step = 0.1,
+  model = "SIR",
+  imm_prob = 0.5,
+  allow_death = FALSE,
+  fat_prob = 0.15,
   seed = NULL
 )
 }
 \arguments{
-\item{input_matrix}{Input matrix}
+\item{input_matrix}{Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.}
 
 \item{step}{Value to step by in sequence of infection probabilities}
+
+\item{model}{Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to "SIR".}
+
+\item{imm_prob}{Probability that an infected cell becomes recovered in SIRS.
+Infected cells that do not recover become susceptible. Ignored by SIR and SIS.}
+
+\item{allow_death}{Enable optional mortality after infection.}
+
+\item{fat_prob}{Probability that an infected cell becomes deceased when mortality is enabled.}
 
 \item{seed}{Optional random seed for reproducible simulations}
 }

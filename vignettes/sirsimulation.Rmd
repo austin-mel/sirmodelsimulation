@@ -18,10 +18,16 @@ knitr::opts_chunk$set(
 library(SIRSimulation)
 ```
 
-## Create an initial matrix
+## State encoding
 
-SIRSimulation uses `0` for susceptible cells and `1` for infected cells in the
-initial population matrix.
+Population matrices use simple numeric states:
+
+- `0`: susceptible
+- `1`: infected
+- `2`: recovered
+- `3`: deceased
+
+Initial matrices usually contain only susceptible and infected cells.
 
 ```{r initial-matrix}
 initial <- create_matrix(row = 10, col = 10, start_inf = 0.1, seed = 94128)
@@ -35,36 +41,94 @@ create_crnr_matrix(row = 10, col = 10)
 create_cntr_matrix(row = 10, col = 10)
 ```
 
-## Run one SIR simulation
+## Models
 
-```{r one-run}
-result <- simulate_sir(prob_infect = 0.25, input_matrix = initial, seed = 94128)
-result$steps
-result$inf_prop
-result$final_matrix
+`model = "SIR"` makes infected cells recover after their infectious step.
+
+```{r sir-run}
+sir_result <- simulate_sir(
+  prob_infect = 0.25,
+  input_matrix = initial,
+  model = "SIR",
+  seed = 94128
+)
+sir_result$steps
+sir_result$inf_prop
+sir_result$final_matrix
 ```
 
-## Inspect history
+`model = "SIS"` makes infected cells return to susceptible.
+
+```{r sis-run}
+simulate_sir(
+  prob_infect = 0,
+  input_matrix = matrix(1, nrow = 1, ncol = 1),
+  model = "SIS",
+  seed = 94128
+)
+```
+
+`model = "SIRS"` uses `imm_prob` to decide whether infected cells recover or
+return to susceptible.
+
+```{r sirs-run}
+simulate_sir(
+  prob_infect = 0,
+  input_matrix = matrix(1, nrow = 1, ncol = 1),
+  model = "SIRS",
+  imm_prob = 0.7,
+  seed = 94128
+)
+```
+
+## Mortality
+
+Set `allow_death = TRUE` to let infected cells become deceased with probability
+`fat_prob`. Cells that do not die follow the active model transition.
+
+```{r mortality-run}
+simulate_sir(
+  prob_infect = 0,
+  input_matrix = matrix(1, nrow = 1, ncol = 1),
+  model = "SIR",
+  allow_death = TRUE,
+  fat_prob = 1,
+  seed = 94128
+)
+```
+
+## History
 
 Each simulation records susceptible, infected, and recovered counts by step.
 
 ```{r history}
-result$history
+sir_result$history
 ```
 
-## Run repeated simulations
+## Repeated runs
 
 ```{r repeated-runs}
-simulate_many_runs(prob_infect = 0.25, input_matrix = initial, runs = 10, seed = 94128)
+simulate_many_runs(
+  prob_infect = 0.25,
+  input_matrix = initial,
+  runs = 10,
+  model = "SIR",
+  seed = 94128
+)
 ```
 
-## Sweep infection probabilities
+## Probability sweeps
 
 ```{r probability-sweep}
-simulate_inf_seq(input_matrix = initial, step = 0.1, seed = 94128)
+simulate_inf_seq(
+  input_matrix = initial,
+  step = 0.1,
+  model = "SIR",
+  seed = 94128
+)
 ```
 
-## Create a recovered-cell heatmap
+## Heatmaps
 
 `multiple_run_heatmap()` returns a matrix of recovered counts by cell. Set
 `plot = TRUE` to draw the heatmap with base R graphics.
@@ -74,6 +138,7 @@ heatmap_counts <- multiple_run_heatmap(
   prob_infect = 0.25,
   input_matrix = initial,
   runs = 10,
+  model = "SIR",
   plot = FALSE,
   seed = 94128
 )
