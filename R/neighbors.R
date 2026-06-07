@@ -7,7 +7,7 @@
 #' @return Count
 #'
 #' @examples
-#' x <- create_matrix(5,5)
+#' x <- create_random_matrix(5, 5)
 #' count_infected_neighbors(x, 2, 2)
 #' @noRd
 count_infected_neighbors <- function(x, i, j) {

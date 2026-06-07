@@ -9,7 +9,7 @@ test_that("infect_step infects susceptible cells and recovers infected cells in 
     byrow = TRUE
   )
 
-  result <- SIRSimulation:::infect_step(prob_infect = 1, input = input, model = "SIR")
+  result <- SIRSsim:::infect_step(prob_infect = 1, input = input, model = "SIR")
 
   expect_equal(result[2, 2], 2)
   expect_true(all(result[cbind(c(1, 1, 1, 2, 2, 3, 3, 3), c(1, 2, 3, 1, 3, 1, 2, 3))] == 1))
@@ -61,7 +61,7 @@ test_that("multiple_run_heatmap returns recovered counts by cell", {
 test_that("model SIR recovers infected cells", {
   input <- matrix(1, nrow = 1, ncol = 1)
 
-  result <- SIRSimulation:::infect_step(prob_infect = 0, input = input, model = "SIR")
+  result <- SIRSsim:::infect_step(prob_infect = 0, input = input, model = "SIR")
 
   expect_equal(result[1, 1], 2)
 })
@@ -69,7 +69,7 @@ test_that("model SIR recovers infected cells", {
 test_that("model SIS returns infected cells to susceptible", {
   input <- matrix(1, nrow = 1, ncol = 1)
 
-  result <- SIRSimulation:::infect_step(prob_infect = 0, input = input, model = "SIS")
+  result <- SIRSsim:::infect_step(prob_infect = 0, input = input, model = "SIS")
 
   expect_equal(result[1, 1], 0)
 })
@@ -77,8 +77,8 @@ test_that("model SIS returns infected cells to susceptible", {
 test_that("model SIRS uses imm_prob to choose recovered or susceptible", {
   input <- matrix(1, nrow = 1, ncol = 1)
 
-  recovered <- SIRSimulation:::infect_step(prob_infect = 0, input = input, model = "SIRS", imm_prob = 1)
-  susceptible <- SIRSimulation:::infect_step(prob_infect = 0, input = input, model = "SIRS", imm_prob = 0)
+  recovered <- SIRSsim:::infect_step(prob_infect = 0, input = input, model = "SIRS", imm_prob = 1)
+  susceptible <- SIRSsim:::infect_step(prob_infect = 0, input = input, model = "SIRS", imm_prob = 0)
 
   expect_equal(recovered[1, 1], 2)
   expect_equal(susceptible[1, 1], 0)
@@ -87,14 +87,14 @@ test_that("model SIRS uses imm_prob to choose recovered or susceptible", {
 test_that("allow_death and fat_prob control mortality edge cases", {
   input <- matrix(1, nrow = 1, ncol = 1)
 
-  deceased <- SIRSimulation:::infect_step(
+  deceased <- SIRSsim:::infect_step(
     prob_infect = 0,
     input = input,
     model = "SIR",
     allow_death = TRUE,
     fat_prob = 1
   )
-  recovered <- SIRSimulation:::infect_step(
+  recovered <- SIRSsim:::infect_step(
     prob_infect = 0,
     input = input,
     model = "SIR",

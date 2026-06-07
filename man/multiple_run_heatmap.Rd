@@ -43,7 +43,7 @@ Matrix of recovered counts by cell
 Run a given simulation multiple times to summarize which cells were previously infected
 }
 \examples{
-x <- create_matrix(5,5)
+x <- create_random_matrix(5, 5)
 
 multiple_run_heatmap(0.25,x,10)
 }

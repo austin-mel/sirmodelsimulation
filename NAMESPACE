@@ -3,6 +3,7 @@
 export(create_cntr_matrix)
 export(create_crnr_matrix)
 export(create_matrix)
+export(create_random_matrix)
 export(multiple_run_heatmap)
 export(simulate_inf_seq)
 export(simulate_many_runs)

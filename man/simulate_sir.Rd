@@ -40,7 +40,7 @@ Results List
 Run simulation of infection spread until there are no longer any infected cells
 }
 \examples{
-x <- create_matrix(5,5)
+x <- create_random_matrix(5, 5)
 
 simulate_sir(0.4,x)
 }

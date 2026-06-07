@@ -1,4 +1,4 @@
 library(testthat)
-library(SIRSimulation)
+library(SIRSsim)
 
-test_check("SIRSimulation")
+test_check("SIRSsim")

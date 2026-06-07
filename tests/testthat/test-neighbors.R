@@ -8,9 +8,9 @@ test_that("count_infected_neighbors counts all eight neighboring cells", {
     nrow = 3,
     byrow = TRUE
   )
-  padded <- SIRSimulation:::pad(input)
+  padded <- SIRSsim:::pad(input)
 
-  expect_equal(SIRSimulation:::count_infected_neighbors(padded, 3, 3), 8)
+  expect_equal(SIRSsim:::count_infected_neighbors(padded, 3, 3), 8)
 })
 
 test_that("count_infected_neighbors returns zero for non-susceptible targets", {
@@ -23,7 +23,7 @@ test_that("count_infected_neighbors returns zero for non-susceptible targets", {
     nrow = 3,
     byrow = TRUE
   )
-  padded <- SIRSimulation:::pad(input)
+  padded <- SIRSsim:::pad(input)
 
-  expect_equal(SIRSimulation:::count_infected_neighbors(padded, 3, 3), 0)
+  expect_equal(SIRSsim:::count_infected_neighbors(padded, 3, 3), 0)
 })

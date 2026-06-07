@@ -37,7 +37,7 @@ Results Dataframe
 Run a given simulation multiple times using a sequence of increasing infection probabilities.
 }
 \examples{
-x <- create_matrix(5,5)
+x <- create_random_matrix(5, 5)
 
 simulate_inf_seq(x,0.1)
 }

@@ -40,7 +40,7 @@ Results Dataframe
 Run a given simulation multiple times and get the average steps and average proportion of cells infected.
 }
 \examples{
-x <- create_matrix(5,5)
+x <- create_random_matrix(5, 5)
 
 simulate_many_runs(0.25,x,10)
 }

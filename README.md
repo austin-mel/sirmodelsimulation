@@ -1,16 +1,17 @@
-# SIRSimulation
+# SIRSsim
 
-SIRSimulation is a small R package for running the existing SIR model
-simulation functions.
+SIRSsim is a small R package for running SIR, SIS, and SIRS model simulation
+functions.
 
 Load the package with:
 
 ```r
-library(SIRSimulation)
+library(SIRSsim)
 ```
 
 Public functions:
 
+- `create_random_matrix()`
 - `create_matrix()`
 - `create_crnr_matrix()`
 - `create_cntr_matrix()`
@@ -28,10 +29,28 @@ Simulation matrices use numeric state values:
 - `2`: recovered
 - `3`: deceased
 
-Initial matrices usually start with only susceptible and infected cells:
+Initial matrices usually start with only susceptible and infected cells.
+Use a fractional `start_infected` value to treat it as an infection
+probability:
 
 ```r
-initial <- create_matrix(row = 10, col = 10, start_inf = 0.1, seed = 94128)
+initial <- create_random_matrix(
+  row = 10,
+  col = 10,
+  start_infected = 0.1,
+  seed = 94128
+)
+```
+
+Use a whole number to infect exactly that many randomly selected cells:
+
+```r
+initial_count <- create_random_matrix(
+  row = 10,
+  col = 10,
+  start_infected = 8,
+  seed = 94128
+)
 ```
 
 ## Models

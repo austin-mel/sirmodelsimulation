@@ -1,8 +1,8 @@
 ---
-title: "SIRSimulation"
+title: "SIRSsim"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{SIRSimulation}
+  %\VignetteIndexEntry{SIRSsim}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(SIRSimulation)
+library(SIRSsim)
 ```
 
 ## State encoding
@@ -27,11 +27,29 @@ Population matrices use simple numeric states:
 - `2`: recovered
 - `3`: deceased
 
-Initial matrices usually contain only susceptible and infected cells.
+Initial matrices usually contain only susceptible and infected cells. A
+fractional `start_infected` value is treated as the probability that each cell
+starts infected.
 
 ```{r initial-matrix}
-initial <- create_matrix(row = 10, col = 10, start_inf = 0.1, seed = 94128)
+initial <- create_random_matrix(
+  row = 10,
+  col = 10,
+  start_infected = 0.1,
+  seed = 94128
+)
 initial
+```
+
+A whole number infects exactly that many randomly selected cells.
+
+```{r initial-count-matrix}
+create_random_matrix(
+  row = 10,
+  col = 10,
+  start_infected = 8,
+  seed = 94128
+)
 ```
 
 Corner- and center-seeded matrices are also available:

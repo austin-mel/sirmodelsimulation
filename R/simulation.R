@@ -108,7 +108,7 @@ plot_sir_matrix <- function(input, main = "SIR simulation matrix") {
 #' @return new_inf_matrix
 #'
 #' @examples
-#' x <- create_matrix(5,5)
+#' x <- create_random_matrix(5, 5)
 #'
 #' infect_step(0.25,x)
 #' @noRd
@@ -156,7 +156,7 @@ infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5
 #' @return Results List
 #'
 #' @examples
-#' x <- create_matrix(5,5)
+#' x <- create_random_matrix(5, 5)
 #'
 #' simulate_sir(0.4,x)
 #' @export
@@ -210,7 +210,7 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_pr
 #' @return Results Dataframe
 #'
 #' @examples
-#' x <- create_matrix(5,5)
+#' x <- create_random_matrix(5, 5)
 #'
 #' simulate_many_runs(0.25,x,10)
 #' @export
@@ -245,7 +245,7 @@ simulate_many_runs <- function(prob_infect = 0.25, input_matrix, runs = 10, mode
 #' @return Results Dataframe
 #'
 #' @examples
-#' x <- create_matrix(5,5)
+#' x <- create_random_matrix(5, 5)
 #'
 #' simulate_inf_seq(x,0.1)
 #' @export
@@ -279,7 +279,7 @@ simulate_inf_seq <- function(input_matrix, step = 0.1, model = "SIR", imm_prob =
 #' @return Matrix of recovered counts by cell
 #'
 #' @examples
-#' x <- create_matrix(5,5)
+#' x <- create_random_matrix(5, 5)
 #'
 #' multiple_run_heatmap(0.25,x,10)
 #' @export
