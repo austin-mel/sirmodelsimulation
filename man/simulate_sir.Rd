@@ -12,7 +12,8 @@ simulate_sir(
   allow_death = FALSE,
   fat_prob = 0.15,
   plot = FALSE,
-  seed = NULL
+  seed = NULL,
+  full_log = FALSE
 )
 }
 \arguments{
@@ -32,9 +33,15 @@ Infected cells that do not recover become susceptible. Ignored by SIR and SIS.}
 \item{plot}{Plot each simulation step}
 
 \item{seed}{Optional random seed for reproducible simulation}
+
+\item{full_log}{Include a per-cell, per-step long-format log for survival
+analysis. Defaults to \code{FALSE}, which preserves the standard return fields.}
 }
 \value{
 Results List
+When \code{full_log = TRUE}, the returned list includes a \code{full_log} data frame
+with one row per cell per simulation step, including step 0 before any
+transitions occur.
 }
 \description{
 Run simulation of infection spread until there are no longer any infected cells

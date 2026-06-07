@@ -85,6 +85,63 @@ Inspect the per-step susceptible, infected, and recovered counts:
 result$history
 ```
 
+## Full Logs for Survival Analysis
+
+Set `full_log = TRUE` to return one row per cell per simulation step. The log
+includes step `0`, before any transitions occur.
+
+```r
+logged_result <- simulate_sir(
+  prob_infect = 0.25,
+  input_matrix = initial,
+  model = "SIR",
+  seed = 94128,
+  full_log = TRUE
+)
+
+head(logged_result$full_log)
+```
+
+The `full_log` table includes cell identity, position, state, model settings,
+and state indicators:
+
+```r
+names(logged_result$full_log)
+```
+
+Downstream survival-analysis code can derive per-cell endpoints such as first
+infection, recovery, death, last observed step, event indicators, time to event,
+and final state:
+
+```r
+cell_log <- logged_result$full_log
+
+survival_ready <- do.call(
+  rbind,
+  lapply(split(cell_log, cell_log$cell_id), function(cell) {
+    first_infected_step <- if (any(cell$was_infected)) min(cell$step[cell$was_infected]) else NA
+    recovered_step <- if (any(cell$was_immune)) min(cell$step[cell$was_immune]) else NA
+    death_step <- if (any(cell$was_deceased)) min(cell$step[cell$was_deceased]) else NA
+    last_observed_step <- max(cell$step)
+
+    data.frame(
+      cell_id = cell$cell_id[1],
+      first_infected_step = first_infected_step,
+      recovered_step = recovered_step,
+      death_step = death_step,
+      last_observed_step = last_observed_step,
+      event_infection = !is.na(first_infected_step),
+      event_recovery = !is.na(recovered_step),
+      event_death = !is.na(death_step),
+      time_to_infection = first_infected_step,
+      time_to_recovery = recovered_step,
+      time_to_death = death_step,
+      final_state = cell$state[cell$step == last_observed_step]
+    )
+  })
+)
+```
+
 Run an SIRS simulation with a custom immunity probability:
 
 ```r

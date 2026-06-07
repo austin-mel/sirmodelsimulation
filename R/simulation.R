@@ -56,6 +56,32 @@ sir_counts <- function(x, step) {
   )
 }
 
+cell_step_log <- function(x, step, model, prob_infect, imm_prob, allow_death, fat_prob) {
+  cell_grid <- expand.grid(
+    row = seq_len(nrow(x)),
+    col = seq_len(ncol(x))
+  )
+  state <- as.vector(x)
+
+  data.frame(
+    step = step,
+    cell_id = seq_len(length(state)),
+    row = cell_grid$row,
+    col = cell_grid$col,
+    state = state,
+    model = model,
+    prob_infect = prob_infect,
+    auto_immunity = model != "SIS",
+    imm_prob = imm_prob,
+    allow_death = allow_death,
+    fat_prob = fat_prob,
+    was_susceptible = state == SUSCEPTIBLE,
+    was_infected = state == INFECTED,
+    was_immune = state == RECOVERED,
+    was_deceased = state == DECEASED
+  )
+}
+
 next_post_infection_state <- function(options) {
   if (options$allow_death && stats::runif(1) < options$fat_prob) {
     return(DECEASED)
@@ -152,21 +178,31 @@ infect_step <- function(prob_infect = 0.25, input, model = "SIR", imm_prob = 0.5
 #' @param fat_prob Probability that an infected cell becomes deceased when mortality is enabled.
 #' @param plot Plot each simulation step
 #' @param seed Optional random seed for reproducible simulation
+#' @param full_log Include a per-cell, per-step long-format log for survival
+#'   analysis. Defaults to `FALSE`, which preserves the standard return fields.
 #'
 #' @return Results List
+#' When `full_log = TRUE`, the returned list includes a `full_log` data frame
+#' with one row per cell per simulation step, including step 0 before any
+#' transitions occur.
 #'
 #' @examples
 #' x <- create_random_matrix(5, 5)
 #'
 #' simulate_sir(0.4,x)
 #' @export
-simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15, plot = FALSE, seed = NULL) {
+simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_prob = 0.5, allow_death = FALSE, fat_prob = 0.15, plot = FALSE, seed = NULL, full_log = FALSE) {
   validate_sir_inputs(input_matrix, prob_infect, model, imm_prob, allow_death, fat_prob)
   set_optional_seed(seed)
 
   x <- input_matrix
   step_count <- 0
   history <- sir_counts(x, step_count)
+  log_rows <- NULL
+
+  if (isTRUE(full_log)) {
+    log_rows <- cell_step_log(x, step_count, model, prob_infect, imm_prob, allow_death, fat_prob)
+  }
 
   if (isTRUE(plot)) {
     plot_sir_matrix(x, main = paste("SIR simulation step", step_count))
@@ -177,6 +213,10 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_pr
     step_count <- step_count + 1
     history <- rbind(history, sir_counts(x, step_count))
 
+    if (isTRUE(full_log)) {
+      log_rows <- rbind(log_rows, cell_step_log(x, step_count, model, prob_infect, imm_prob, allow_death, fat_prob))
+    }
+
     if (isTRUE(plot)) {
       plot_sir_matrix(x, main = paste("SIR simulation step", step_count))
     }
@@ -186,13 +226,19 @@ simulate_sir <- function(prob_infect = 0.25, input_matrix, model = "SIR", imm_pr
   num_total <- ncol(x) * nrow(x)
   inf_prop <- num_recovered / num_total
 
-  list(
+  result <- list(
     steps = step_count,
     prob_infect = prob_infect,
     inf_prop = inf_prop,
     final_matrix = x,
     history = history
   )
+
+  if (isTRUE(full_log)) {
+    result$full_log <- log_rows
+  }
+
+  result
 }
 
 #' Run a given simulation multiple times and get the average steps and average proportion of cells infected.

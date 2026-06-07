@@ -28,6 +28,74 @@ test_that("simulate_sir returns summary fields and per-step history", {
   expect_equal(result$history$infected, c(1, 0))
 })
 
+test_that("simulate_sir omits full_log by default", {
+  input <- matrix(c(1, 0, 0, 0), nrow = 2)
+
+  result <- simulate_sir(prob_infect = 0, input_matrix = input)
+
+  expect_false("full_log" %in% names(result))
+})
+
+test_that("simulate_sir includes per-cell per-step full_log when requested", {
+  input <- matrix(c(1, 0, 0, 0), nrow = 2)
+
+  result <- simulate_sir(
+    prob_infect = 0,
+    input_matrix = input,
+    model = "SIR",
+    full_log = TRUE
+  )
+
+  expect_true("full_log" %in% names(result))
+  expect_s3_class(result$full_log, "data.frame")
+  expect_equal(nrow(result$full_log), length(input) * (result$steps + 1))
+  expect_equal(
+    names(result$full_log),
+    c(
+      "step",
+      "cell_id",
+      "row",
+      "col",
+      "state",
+      "model",
+      "prob_infect",
+      "auto_immunity",
+      "imm_prob",
+      "allow_death",
+      "fat_prob",
+      "was_susceptible",
+      "was_infected",
+      "was_immune",
+      "was_deceased"
+    )
+  )
+  expect_equal(sort(unique(result$full_log$step)), 0:result$steps)
+  expect_equal(result$full_log$state[result$full_log$step == 0 & result$full_log$cell_id == 1], 1)
+  expect_equal(result$full_log$state[result$full_log$step == 1 & result$full_log$cell_id == 1], 2)
+})
+
+test_that("full_log contains enough information to derive survival endpoints", {
+  input <- matrix(c(1, 0, 0, 0), nrow = 2)
+
+  result <- simulate_sir(prob_infect = 0, input_matrix = input, full_log = TRUE)
+  cell_one <- result$full_log[result$full_log$cell_id == 1, ]
+
+  first_infected_step <- min(cell_one$step[cell_one$was_infected])
+  recovered_step <- min(cell_one$step[cell_one$was_immune])
+  death_step <- if (any(cell_one$was_deceased)) min(cell_one$step[cell_one$was_deceased]) else NA
+  last_observed_step <- max(cell_one$step)
+  final_state <- cell_one$state[cell_one$step == last_observed_step]
+
+  expect_equal(first_infected_step, 0)
+  expect_equal(recovered_step, 1)
+  expect_true(is.na(death_step))
+  expect_equal(last_observed_step, result$steps)
+  expect_equal(final_state, 2)
+  expect_true(any(cell_one$was_infected))
+  expect_true(any(cell_one$was_immune))
+  expect_false(any(cell_one$was_deceased))
+})
+
 test_that("simulate_many_runs returns averaged SIR results", {
   input <- matrix(c(1, 0, 0, 0), nrow = 2)
 
