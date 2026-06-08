@@ -1,8 +1,8 @@
 ---
-title: "SIR Simulation"
+title: "SIRSsim"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{sirsimulation}
+  %\VignetteIndexEntry{SIRSsim}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -15,102 +15,202 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(graphics)
-library(SIRSimulation)
+library(SIRSsim)
 ```
 
-## Getting started
+## State encoding
 
-To get started with this package, you must first create a matrix that you can input into the simulation. You can use one of the methods to create a matrix in the package, or you can input a completely custom matrix. It is required that the input is a matrix data type, however, the size of the matrix does not matter.
+Population matrices use simple numeric states:
 
-You can create a matrix with a given chance of each cell starting as infected using the function.
-```{r}
-# Matrix with 25% chance of each cell starting infected
-x <- create_matrix(5,5,0.25)
-```
-Similarly, you can use other designs such as starting the corners or very center cell as infected.
-```{r}
-# corners infected matrix
-corners <- create_crnr_matrix(5,5)
+- `0`: susceptible
+- `1`: infected
+- `2`: recovered
+- `3`: deceased
 
-# Center infected matrix
-center <- create_cntr_matrix(15,15)
-```
-Or you can create your own custom matrix to use an your input.
+Initial matrices usually contain only susceptible and infected cells. A
+fractional `start_infected` value is treated as the probability that each cell
+starts infected.
 
-## Running a simulation
-
-To run a basic single simulation use the following function.
-```{r}
-# Run a basic simulation on matrix x
-# Set probability of infection to 0.25
-# Use default values auto_immunity FALSE and allow_death FALSE
-# Since auto_immunity is FALSE, this will use the default immunity probability value of 0.5
-simulate_sir(0.25,x)
-```
-However, there are some additional arguments we can add to the simulation call to increase the complexity of the simulation.
-
-You can specify a specific probability of immunity by using the following arguments.
-```{r}
-# Run a basic simulation on matrix x
-# Set probability of infection to 0.25
-# Use default values auto_immunity FALSE and allow_death FALSE
-# Set value for immunity probability to 0.34
-simulate_sir(0.25,x,FALSE,0.34)
+```{r initial-matrix}
+initial <- create_random_matrix(
+  row = 10,
+  col = 10,
+  start_infected = 0.1,
+  seed = 94128
+)
+initial
 ```
 
-We can enable the auto_immunity parameter so that every cell that gets infected automatically gains immunity.
-```{r}
-# Run a basic simulation on matrix x
-# Set probability of infection to 0.25
-# Set auto_immunity to TRUE and use default value of allow_death FALSE
-simulate_sir(0.25,x,TRUE)
-```
-Additionally, we can enable the allow_death parameter to enable cells to become Immune or Deceased after infection.
-```{r}
-# Run a basic simulation on matrix x
-# Set probability of infection to 0.25
-# Set auto_immunity to TRUE and immunity probability to 0.0
-# Set allow_death to TRUE and fatality probability to 0.19
-simulate_sir(0.25,x,TRUE,0.0,TRUE,0.19)
-```
-Lastly, we can disable the auto_immunity parameter and enable the allow_death parameter to enable cells to become Susceptible, Immune, or Deceased after infection.
-```{r}
-# Run a basic simulation on matrix x
-# Set probability of infection to 0.25
-# Set auto_immunity to FALSE and immunity probability to 0.35
-# Set allow_death to TRUE and fatality probability to 0.12
-simulate_sir(0.25,x,FALSE,0.35,TRUE,0.12)
+A whole number infects exactly that many randomly selected cells.
+
+```{r initial-count-matrix}
+create_random_matrix(
+  row = 10,
+  col = 10,
+  start_infected = 8,
+  seed = 94128
+)
 ```
 
-## Simulating models over a sequence of infection probabilities
+Corner- and center-seeded matrices are also available:
 
-You can also run any of the above models over a sequence of different infection probabilities to compare results.
-```{r}
-# Run the sequence of infection probabilities using the basic simulation on matrix x from above
-# Set step in sequence to 0.1
-simulate_inf_seq(x,0.1)
+```{r seeded-matrices}
+create_crnr_matrix(row = 10, col = 10)
+create_cntr_matrix(row = 10, col = 10)
 ```
-You can modify the parameters of this function the same as the simulate_sir() function to modify the simulation settings.
 
-## Simulate many model runs
+## Models
 
-You can run any of the above models a specified number times to get the average statistics.
-```{r}
-# Run a basic simulation on matrix x many times and report average statistics
-# Set probability of infection to 0.25
-# Set number of runs to 2
-simulate_many_runs(0.25,x,2)
+`model = "SIR"` makes infected cells recover after their infectious step.
+
+```{r sir-run}
+sir_result <- simulate_sir(
+  prob_infect = 0.25,
+  input_matrix = initial,
+  model = "SIR",
+  seed = 94128
+)
+sir_result$steps
+sir_result$inf_prop
+sir_result$final_matrix
 ```
-You can modify the parameters of this function the same as the simulate_sir() function to modify the simulation settings.
 
-## Generate multiple runs heatmap
+`model = "SIS"` makes infected cells return to susceptible.
 
-You can generate a heatmap of the results of multiple simulation runs to identify which cells are more likely to become infected.
-```{r}
-# Run a basic simulation on matrix x many times and generate heatmap
-# Set probability of infection to 0.25
-# Set number of runs to 2
-multiple_run_heatmap(0.25,x,2)
+```{r sis-run}
+simulate_sir(
+  prob_infect = 0,
+  input_matrix = matrix(1, nrow = 1, ncol = 1),
+  model = "SIS",
+  seed = 94128
+)
 ```
-You can modify the parameters of this function the same as the simulate_sir() function to modify the simulation settings.
+
+`model = "SIRS"` uses `imm_prob` to decide whether infected cells recover or
+return to susceptible.
+
+```{r sirs-run}
+simulate_sir(
+  prob_infect = 0,
+  input_matrix = matrix(1, nrow = 1, ncol = 1),
+  model = "SIRS",
+  imm_prob = 0.7,
+  seed = 94128
+)
+```
+
+## Mortality
+
+Set `allow_death = TRUE` to let infected cells become deceased with probability
+`fat_prob`. Cells that do not die follow the active model transition.
+
+```{r mortality-run}
+simulate_sir(
+  prob_infect = 0,
+  input_matrix = matrix(1, nrow = 1, ncol = 1),
+  model = "SIR",
+  allow_death = TRUE,
+  fat_prob = 1,
+  seed = 94128
+)
+```
+
+## History
+
+Each simulation records susceptible, infected, and recovered counts by step.
+
+```{r history}
+sir_result$history
+```
+
+## Full logs for survival analysis
+
+Set `full_log = TRUE` to return one row per cell per simulation step. The log
+includes step `0`, before any transitions occur.
+
+```{r full-log}
+logged_result <- simulate_sir(
+  prob_infect = 0.25,
+  input_matrix = initial,
+  model = "SIR",
+  seed = 94128,
+  full_log = TRUE
+)
+
+head(logged_result$full_log)
+```
+
+The full log contains enough information to derive per-cell survival-analysis
+fields such as first infection, recovery, death, last observed step, event
+indicators, time to event, and final state.
+
+```{r survival-ready}
+cell_log <- logged_result$full_log
+
+survival_ready <- do.call(
+  rbind,
+  lapply(split(cell_log, cell_log$cell_id), function(cell) {
+    first_infected_step <- if (any(cell$was_infected)) min(cell$step[cell$was_infected]) else NA
+    recovered_step <- if (any(cell$was_immune)) min(cell$step[cell$was_immune]) else NA
+    death_step <- if (any(cell$was_deceased)) min(cell$step[cell$was_deceased]) else NA
+    last_observed_step <- max(cell$step)
+
+    data.frame(
+      cell_id = cell$cell_id[1],
+      first_infected_step = first_infected_step,
+      recovered_step = recovered_step,
+      death_step = death_step,
+      last_observed_step = last_observed_step,
+      event_infection = !is.na(first_infected_step),
+      event_recovery = !is.na(recovered_step),
+      event_death = !is.na(death_step),
+      time_to_infection = first_infected_step,
+      time_to_recovery = recovered_step,
+      time_to_death = death_step,
+      final_state = cell$state[cell$step == last_observed_step]
+    )
+  })
+)
+
+head(survival_ready)
+```
+
+## Repeated runs
+
+```{r repeated-runs}
+simulate_many_runs(
+  prob_infect = 0.25,
+  input_matrix = initial,
+  runs = 10,
+  model = "SIR",
+  seed = 94128
+)
+```
+
+## Probability sweeps
+
+```{r probability-sweep}
+simulate_inf_seq(
+  input_matrix = initial,
+  step = 0.1,
+  model = "SIR",
+  seed = 94128
+)
+```
+
+## Heatmaps
+
+`multiple_run_heatmap()` returns a matrix of recovered counts by cell. Set
+`plot = TRUE` to draw the heatmap with base R graphics.
+
+```{r heatmap}
+heatmap_counts <- multiple_run_heatmap(
+  prob_infect = 0.25,
+  input_matrix = initial,
+  runs = 10,
+  model = "SIR",
+  plot = FALSE,
+  seed = 94128
+)
+heatmap_counts
+```
