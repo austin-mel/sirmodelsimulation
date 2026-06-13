@@ -309,7 +309,7 @@ simulate_inf_seq <- function(input_matrix, step = 0.1, model = "SIR", imm_prob =
   )
 }
 
-#' Run a given simulation multiple times to summarize which cells were previously infected
+#' Run a given simulation multiple times to summarize which cells were infected
 #'
 #' @param prob_infect Probability of infection spreading
 #' @param input_matrix Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.
@@ -322,7 +322,7 @@ simulate_inf_seq <- function(input_matrix, step = 0.1, model = "SIR", imm_prob =
 #' @param plot Plot the heatmap
 #' @param seed Optional random seed for reproducible simulations
 #'
-#' @return Matrix of recovered counts by cell
+#' @return Matrix of infection counts by cell
 #'
 #' @examples
 #' x <- create_random_matrix(5, 5)
@@ -335,13 +335,16 @@ multiple_run_heatmap <- function(prob_infect = 0.25, input_matrix, runs = 10, mo
 
   simulations <- replicate(
     runs,
-    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix, model = model, imm_prob = imm_prob, allow_death = allow_death, fat_prob = fat_prob),
+    simulate_sir(prob_infect = prob_infect, input_matrix = input_matrix, model = model, imm_prob = imm_prob, allow_death = allow_death, fat_prob = fat_prob, full_log = TRUE),
     simplify = FALSE
   )
 
   heatmap_matrix <- matrix(0, nrow = nrow(input_matrix), ncol = ncol(input_matrix))
   for (simulation in simulations) {
-    heatmap_matrix <- heatmap_matrix + (simulation[["final_matrix"]] == RECOVERED)
+    infected_cells <- unique(simulation[["full_log"]]$cell_id[simulation[["full_log"]]$was_infected])
+    run_matrix <- matrix(0, nrow = nrow(input_matrix), ncol = ncol(input_matrix))
+    run_matrix[infected_cells] <- 1
+    heatmap_matrix <- heatmap_matrix + run_matrix
   }
 
   if (isTRUE(plot)) {
@@ -352,7 +355,7 @@ multiple_run_heatmap <- function(prob_infect = 0.25, input_matrix, runs = 10, mo
       seq_len(nrow(heatmap_matrix)),
       t(display_matrix)
     )
-    graphics::title(paste("Recovered cell count across", runs, "SIR runs"))
+    graphics::title(paste("Infected cell count across", runs, "simulation runs"))
   }
 
   heatmap_matrix

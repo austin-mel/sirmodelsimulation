@@ -27,36 +27,38 @@ Population matrices use simple numeric states:
 - `2`: recovered
 - `3`: deceased
 
-Initial matrices usually contain only susceptible and infected cells. A
-fractional `start_infected` value is treated as the probability that each cell
-starts infected.
+Initial matrices usually contain only susceptible and infected cells.
+`create_random_matrix()` infects an exact number of randomly selected cells.
 
 ```{r initial-matrix}
 initial <- create_random_matrix(
   row = 10,
   col = 10,
-  start_infected = 0.1,
+  start_infected = 8,
   seed = 94128
 )
 initial
 ```
 
-A whole number infects exactly that many randomly selected cells.
+Use `start_infected = 0` to create an all-susceptible starting matrix.
 
 ```{r initial-count-matrix}
 create_random_matrix(
   row = 10,
   col = 10,
-  start_infected = 8,
+  start_infected = 0,
   seed = 94128
 )
 ```
 
-Corner- and center-seeded matrices are also available:
+Center- and corner-seeded matrices are also available. These helpers accept the
+same parameters as `create_random_matrix()` for a consistent interface, but
+their named patterns are fixed: the center helper infects the center cell, and
+the corner helper infects all four corners.
 
 ```{r seeded-matrices}
-create_crnr_matrix(row = 10, col = 10)
-create_cntr_matrix(row = 10, col = 10)
+create_center_matrix(row = 10, col = 10, start_infected = 1, seed = NULL)
+create_corner_matrix(row = 10, col = 10, start_infected = 1, seed = NULL)
 ```
 
 ## Models
@@ -200,7 +202,9 @@ simulate_inf_seq(
 
 ## Heatmaps
 
-`multiple_run_heatmap()` returns a matrix of recovered counts by cell. Set
+`multiple_run_heatmap()` returns a matrix of infection counts by cell. Each
+cell is counted once per run if it was infected at any point in that run,
+including cells that later recovered, became susceptible again, or died. Set
 `plot = TRUE` to draw the heatmap with base R graphics.
 
 ```{r heatmap}
