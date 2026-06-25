@@ -4,16 +4,14 @@
 \alias{create_matrix}
 \title{Create a matrix of any size with random infected starting cells}
 \usage{
-create_matrix(row, col, start_inf = 0.125, seed = NULL)
+create_matrix(row, col, start_inf = 1, seed = NULL)
 }
 \arguments{
 \item{row}{Number of rows for matrix}
 
 \item{col}{Number of columns for matrix}
 
-\item{start_inf}{Probability that each cell starts infected when between 0
-and 1, or the exact number of randomly selected infected cells when 1 or
-greater.}
+\item{start_inf}{Exact number of randomly selected cells that start infected}
 
 \item{seed}{Optional random seed for reproducible sampling}
 }
@@ -21,13 +19,10 @@ greater.}
 Infection Matrix
 }
 \description{
-Create a matrix of any size with random infected starting cells
-}
-\details{
 \code{create_matrix()} is kept for backward compatibility. Prefer
 \code{\link[=create_random_matrix]{create_random_matrix()}} for new code.
 }
 \examples{
 create_matrix(5, 5)
-create_matrix(15, 15, 0.25)
+create_matrix(15, 15, 10)
 }

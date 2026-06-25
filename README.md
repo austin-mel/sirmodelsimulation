@@ -13,8 +13,8 @@ Public functions:
 
 - `create_random_matrix()`
 - `create_matrix()`
-- `create_crnr_matrix()`
-- `create_cntr_matrix()`
+- `create_corner_matrix()`
+- `create_center_matrix()`
 - `simulate_sir()`
 - `simulate_inf_seq()`
 - `simulate_many_runs()`
@@ -29,27 +29,40 @@ Simulation matrices use numeric state values:
 - `2`: recovered
 - `3`: deceased
 
-Initial matrices usually start with only susceptible and infected cells.
-Use a fractional `start_infected` value to treat it as an infection
-probability:
+Initial matrices usually start with only susceptible and infected cells. There
+are three starting matrix helpers.
+
+Use `create_random_matrix()` to infect an exact number of randomly selected
+cells:
 
 ```r
 initial <- create_random_matrix(
   row = 10,
   col = 10,
-  start_infected = 0.1,
+  start_infected = 8,
   seed = 94128
 )
 ```
 
-Use a whole number to infect exactly that many randomly selected cells:
+Use `create_center_matrix()` to start with the center cell infected:
 
 ```r
-initial_count <- create_random_matrix(
+center_start <- create_center_matrix(
   row = 10,
   col = 10,
-  start_infected = 8,
-  seed = 94128
+  start_infected = 1,
+  seed = NULL
+)
+```
+
+Use `create_corner_matrix()` to start with the four corner cells infected:
+
+```r
+corner_start <- create_corner_matrix(
+  row = 10,
+  col = 10,
+  start_infected = 1,
+  seed = NULL
 )
 ```
 
@@ -190,7 +203,7 @@ simulate_inf_seq(
 )
 ```
 
-Summarize how often each cell ended recovered across repeated SIR runs:
+Summarize how often each cell was infected at any point across repeated runs:
 
 ```r
 heatmap_counts <- multiple_run_heatmap(

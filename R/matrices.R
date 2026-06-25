@@ -2,24 +2,25 @@
 #'
 #' @param row Number of rows for matrix
 #' @param col Number of columns for matrix
-#' @param start_infected Probability that each cell starts infected when between
-#'   0 and 1, or the exact number of randomly selected infected cells when 1 or
-#'   greater.
+#' @param start_infected Exact number of randomly selected cells that start infected
 #' @param seed Optional random seed for reproducible sampling
 #'
 #' @return Infection Matrix
 #'
 #' @examples
 #' create_random_matrix(5, 5)
-#' create_random_matrix(15, 15, 0.25)
 #' create_random_matrix(15, 15, 10)
 #' @export
-create_random_matrix <- function(row, col, start_infected = 0.125, seed = NULL) {
+create_random_matrix <- function(row, col, start_infected = 1, seed = NULL) {
   total_cells <- row * col
 
   if (!is.numeric(start_infected) || length(start_infected) != 1 ||
       is.na(start_infected) || start_infected < 0 || start_infected > total_cells) {
     stop("start_infected must be one number between 0 and row * col.", call. = FALSE)
+  }
+
+  if (start_infected != floor(start_infected)) {
+    stop("start_infected must be a whole number.", call. = FALSE)
   }
 
   if (!is.null(seed)) {
@@ -28,18 +29,6 @@ create_random_matrix <- function(row, col, start_infected = 0.125, seed = NULL) 
 
   if (start_infected == 0) {
     return(matrix(0, nrow = row, ncol = col))
-  }
-
-  if (start_infected < 1) {
-    return(matrix(
-      sample(c(0, 1), total_cells, replace = TRUE, prob = c(1 - start_infected, start_infected)),
-      nrow = row,
-      ncol = col
-    ))
-  }
-
-  if (start_infected != floor(start_infected)) {
-    stop("start_infected must be a whole number when it is 1 or greater.", call. = FALSE)
   }
 
   inf_matrix <- matrix(0, nrow = row, ncol = col)
@@ -55,18 +44,16 @@ create_random_matrix <- function(row, col, start_infected = 0.125, seed = NULL) 
 #'
 #' @param row Number of rows for matrix
 #' @param col Number of columns for matrix
-#' @param start_inf Probability that each cell starts infected when between 0
-#'   and 1, or the exact number of randomly selected infected cells when 1 or
-#'   greater.
+#' @param start_inf Exact number of randomly selected cells that start infected
 #' @param seed Optional random seed for reproducible sampling
 #'
 #' @return Infection Matrix
 #'
 #' @examples
 #' create_matrix(5, 5)
-#' create_matrix(15, 15, 0.25)
+#' create_matrix(15, 15, 10)
 #' @export
-create_matrix <- function(row, col, start_inf = 0.125, seed = NULL) {
+create_matrix <- function(row, col, start_inf = 1, seed = NULL) {
   create_random_matrix(row, col, start_infected = start_inf, seed = seed)
 }
 
@@ -74,13 +61,15 @@ create_matrix <- function(row, col, start_inf = 0.125, seed = NULL) {
 #'
 #' @param row Number of rows for matrix
 #' @param col Number of columns for matrix
+#' @param start_infected Accepted for consistency with [create_random_matrix()] and ignored
+#' @param seed Accepted for consistency with [create_random_matrix()] and ignored
 #'
 #' @return Infection Matrix
 #'
 #' @examples
-#' create_crnr_matrix(10,10)
+#' create_corner_matrix(10, 10)
 #' @export
-create_crnr_matrix <- function(row, col) {
+create_corner_matrix <- function(row, col, start_infected = 1, seed = NULL) {
   inf_matrix <- matrix(0, row, col)
   inf_matrix[1, 1] <- 1
   inf_matrix[1, col] <- 1
@@ -93,13 +82,15 @@ create_crnr_matrix <- function(row, col) {
 #'
 #' @param row Number of rows for matrix
 #' @param col Number of columns for matrix
+#' @param start_infected Accepted for consistency with [create_random_matrix()] and ignored
+#' @param seed Accepted for consistency with [create_random_matrix()] and ignored
 #'
 #' @return Infection Matrix
 #'
 #' @examples
-#' create_cntr_matrix(10,10)
+#' create_center_matrix(10, 10)
 #' @export
-create_cntr_matrix <- function(row, col) {
+create_center_matrix <- function(row, col, start_infected = 1, seed = NULL) {
   inf_matrix <- matrix(0, nrow = row, ncol = col)
   inf_matrix[ceiling(row / 2), ceiling(col / 2)] <- 1
   inf_matrix

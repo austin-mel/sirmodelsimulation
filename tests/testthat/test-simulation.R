@@ -118,12 +118,25 @@ test_that("simulate_inf_seq returns one row per probability", {
   expect_equal(result$infected_prop, c(1, 1))
 })
 
-test_that("multiple_run_heatmap returns recovered counts by cell", {
+test_that("multiple_run_heatmap returns ever-infected counts by cell", {
   input <- matrix(c(1, 0, 0, 0), nrow = 2)
 
   result <- multiple_run_heatmap(prob_infect = 0, input_matrix = input, runs = 3)
 
   expect_equal(result, matrix(c(3, 0, 0, 0), nrow = 2))
+})
+
+test_that("multiple_run_heatmap counts infected cells that do not end recovered", {
+  input <- matrix(1, nrow = 1, ncol = 1)
+
+  result <- multiple_run_heatmap(
+    prob_infect = 0,
+    input_matrix = input,
+    runs = 3,
+    model = "SIS"
+  )
+
+  expect_equal(result, matrix(3, nrow = 1, ncol = 1))
 })
 
 test_that("model SIR recovers infected cells", {

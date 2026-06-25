@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation.R
 \name{multiple_run_heatmap}
 \alias{multiple_run_heatmap}
-\title{Run a given simulation multiple times to summarize which cells were previously infected}
+\title{Run a given simulation multiple times to summarize which cells were infected}
 \usage{
 multiple_run_heatmap(
   prob_infect = 0.25,
@@ -37,10 +37,10 @@ Infected cells that do not recover become susceptible. Ignored by SIR and SIS.}
 \item{seed}{Optional random seed for reproducible simulations}
 }
 \value{
-Matrix of recovered counts by cell
+Matrix of infection counts by cell
 }
 \description{
-Run a given simulation multiple times to summarize which cells were previously infected
+Run a given simulation multiple times to summarize which cells were infected
 }
 \examples{
 x <- create_random_matrix(5, 5)
