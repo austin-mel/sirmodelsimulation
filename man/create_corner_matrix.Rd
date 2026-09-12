@@ -2,24 +2,27 @@
 % Please edit documentation in R/matrices.R
 \name{create_corner_matrix}
 \alias{create_corner_matrix}
-\title{Create a matrix of any size with only the four corners starting as infected cells}
+\title{Create a starting matrix with the four corners infected}
 \usage{
 create_corner_matrix(row, col, start_infected = 1, seed = NULL)
 }
 \arguments{
-\item{row}{Number of rows for matrix}
+\item{row}{Number of rows for the matrix.}
 
-\item{col}{Number of columns for matrix}
+\item{col}{Number of columns for the matrix.}
 
-\item{start_infected}{Accepted for consistency with \code{\link[=create_random_matrix]{create_random_matrix()}} and ignored}
+\item{start_infected}{Accepted for consistency with
+\code{\link[=create_random_matrix]{create_random_matrix()}} and ignored.}
 
-\item{seed}{Accepted for consistency with \code{\link[=create_random_matrix]{create_random_matrix()}} and ignored}
+\item{seed}{Accepted for consistency with
+\code{\link[=create_random_matrix]{create_random_matrix()}} and ignored.}
 }
 \value{
-Infection Matrix
+A numeric matrix with the four corner cells encoded as infected (\code{1}) and
+all other cells encoded as susceptible (\code{0}).
 }
 \description{
-Create a matrix of any size with only the four corners starting as infected cells
+Create a starting matrix with the four corners infected
 }
 \examples{
 create_corner_matrix(10, 10)

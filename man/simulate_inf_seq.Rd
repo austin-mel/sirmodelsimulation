@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation.R
 \name{simulate_inf_seq}
 \alias{simulate_inf_seq}
-\title{Run a given simulation multiple times using a sequence of increasing infection probabilities.}
+\title{Sweep across increasing infection probabilities}
 \usage{
 simulate_inf_seq(
   input_matrix,
@@ -15,29 +15,33 @@ simulate_inf_seq(
 )
 }
 \arguments{
-\item{input_matrix}{Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.}
+\item{input_matrix}{Starting matrix using 0 for susceptible, 1 for infected,
+2 for recovered, and 3 for deceased.}
 
-\item{step}{Value to step by in sequence of infection probabilities}
+\item{step}{Value to step by in the infection probability sequence.}
 
-\item{model}{Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to "SIR".}
+\item{model}{Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to
+"SIR".}
 
 \item{imm_prob}{Probability that an infected cell becomes recovered in SIRS.
 Infected cells that do not recover become susceptible. Ignored by SIR and SIS.}
 
 \item{allow_death}{Enable optional mortality after infection.}
 
-\item{fat_prob}{Probability that an infected cell becomes deceased when mortality is enabled.}
+\item{fat_prob}{Probability that an infected cell becomes deceased when
+mortality is enabled.}
 
-\item{seed}{Optional random seed for reproducible simulations}
+\item{seed}{Optional random seed for a reproducible sequence of simulations.}
 }
 \value{
-Results Dataframe
+A data frame with one row per infection probability: \code{prob_infection},
+\code{total_steps}, and \code{infected_prop}.
 }
 \description{
-Run a given simulation multiple times using a sequence of increasing infection probabilities.
+Sweep across increasing infection probabilities
 }
 \examples{
-x <- create_random_matrix(5, 5)
+x <- create_random_matrix(5, 5, start_infected = 1, seed = 123)
 
-simulate_inf_seq(x,0.1)
+simulate_inf_seq(input_matrix = x, step = 0.1, seed = 123)
 }

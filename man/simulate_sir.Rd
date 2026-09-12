@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation.R
 \name{simulate_sir}
 \alias{simulate_sir}
-\title{Run simulation of infection spread until there are no longer any infected cells}
+\title{Simulate infection spread until no infected cells remain}
 \usage{
 simulate_sir(
   prob_infect = 0.25,
@@ -17,37 +17,56 @@ simulate_sir(
 )
 }
 \arguments{
-\item{prob_infect}{Probability of infection spreading}
+\item{prob_infect}{Probability that one infected neighbor infects a
+susceptible cell during a step. Must be between 0 and 1.}
 
-\item{input_matrix}{Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.}
+\item{input_matrix}{Starting matrix using 0 for susceptible, 1 for infected,
+2 for recovered, and 3 for deceased.}
 
-\item{model}{Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to "SIR".}
+\item{model}{Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to
+"SIR". In this package, SIR recovers infected cells, SIS returns infected
+cells to susceptible, and SIRS uses \code{imm_prob} to decide between those two
+nonfatal outcomes.}
 
 \item{imm_prob}{Probability that an infected cell becomes recovered in SIRS.
 Infected cells that do not recover become susceptible. Ignored by SIR and SIS.}
 
 \item{allow_death}{Enable optional mortality after infection.}
 
-\item{fat_prob}{Probability that an infected cell becomes deceased when mortality is enabled.}
+\item{fat_prob}{Probability that an infected cell becomes deceased when
+mortality is enabled.}
 
-\item{plot}{Plot each simulation step}
+\item{plot}{Plot each simulation step.}
 
-\item{seed}{Optional random seed for reproducible simulation}
+\item{seed}{Optional random seed for a reproducible simulation.}
 
 \item{full_log}{Include a per-cell, per-step long-format log for survival
 analysis. Defaults to \code{FALSE}, which preserves the standard return fields.}
 }
 \value{
-Results List
-When \code{full_log = TRUE}, the returned list includes a \code{full_log} data frame
-with one row per cell per simulation step, including step 0 before any
-transitions occur.
+A list with:
+\itemize{
+\item \code{steps}: number of simulation steps completed before no infected
+cells remained.
+\item \code{prob_infect}: infection probability used for the run.
+\item \code{inf_prop}: proportion of cells that are recovered in the final
+matrix. For SIS, SIRS, or mortality scenarios, this is not necessarily the
+same as the proportion ever infected.
+\item \code{final_matrix}: matrix of final cell states.
+\item \code{history}: data frame of susceptible, infected, and recovered counts
+by step, including step 0.
+\item \code{full_log}: when \code{full_log = TRUE}, a data frame with one row
+per cell per step, including step 0 before any transitions occur.
+}
 }
 \description{
-Run simulation of infection spread until there are no longer any infected cells
+\code{simulate_sir()} treats \code{input_matrix} as a grid of disease states.
+Each step lets infected cells spread infection to susceptible neighbors, then
+moves infected cells according to the selected \code{model}, \code{imm_prob},
+and optional mortality settings.
 }
 \examples{
-x <- create_random_matrix(5, 5)
+x <- create_random_matrix(5, 5, start_infected = 1, seed = 123)
 
-simulate_sir(0.4,x)
+simulate_sir(prob_infect = 0.4, input_matrix = x, seed = 123)
 }
