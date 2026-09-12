@@ -2,26 +2,30 @@
 % Please edit documentation in R/matrices.R
 \name{create_random_matrix}
 \alias{create_random_matrix}
-\title{Create a matrix of any size with random infected starting cells}
+\title{Create a random starting matrix}
 \usage{
 create_random_matrix(row, col, start_infected = 1, seed = NULL)
 }
 \arguments{
-\item{row}{Number of rows for matrix}
+\item{row}{Number of rows for the matrix.}
 
-\item{col}{Number of columns for matrix}
+\item{col}{Number of columns for the matrix.}
 
-\item{start_infected}{Exact number of randomly selected cells that start infected}
+\item{start_infected}{Exact number of randomly selected cells that start
+infected.}
 
-\item{seed}{Optional random seed for reproducible sampling}
+\item{seed}{Optional random seed for reproducible sampling.}
 }
 \value{
-Infection Matrix
+A numeric matrix with susceptible cells encoded as \code{0} and infected cells
+encoded as \code{1}.
 }
 \description{
-Create a matrix of any size with random infected starting cells
+Create a matrix for simulation input where \code{0} means susceptible and
+\code{1} means infected. The requested number of cells are randomly selected
+to start infected.
 }
 \examples{
-create_random_matrix(5, 5)
-create_random_matrix(15, 15, 10)
+create_random_matrix(5, 5, start_infected = 1, seed = 123)
+create_random_matrix(15, 15, start_infected = 10, seed = 123)
 }
