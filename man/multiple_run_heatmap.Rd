@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation.R
 \name{multiple_run_heatmap}
 \alias{multiple_run_heatmap}
-\title{Run a given simulation multiple times to summarize which cells were infected}
+\title{Count how often each cell was infected across repeated runs}
 \usage{
 multiple_run_heatmap(
   prob_infect = 0.25,
@@ -17,33 +17,43 @@ multiple_run_heatmap(
 )
 }
 \arguments{
-\item{prob_infect}{Probability of infection spreading}
+\item{prob_infect}{Probability that one infected neighbor infects a
+susceptible cell during a step. Must be between 0 and 1.}
 
-\item{input_matrix}{Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.}
+\item{input_matrix}{Starting matrix using 0 for susceptible, 1 for infected,
+2 for recovered, and 3 for deceased.}
 
-\item{runs}{Number of simulation runs}
+\item{runs}{Number of simulation runs.}
 
-\item{model}{Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to "SIR".}
+\item{model}{Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to
+"SIR".}
 
 \item{imm_prob}{Probability that an infected cell becomes recovered in SIRS.
 Infected cells that do not recover become susceptible. Ignored by SIR and SIS.}
 
 \item{allow_death}{Enable optional mortality after infection.}
 
-\item{fat_prob}{Probability that an infected cell becomes deceased when mortality is enabled.}
+\item{fat_prob}{Probability that an infected cell becomes deceased when
+mortality is enabled.}
 
-\item{plot}{Plot the heatmap}
+\item{plot}{Plot the heatmap.}
 
-\item{seed}{Optional random seed for reproducible simulations}
+\item{seed}{Optional random seed for a reproducible sequence of simulations.}
 }
 \value{
-Matrix of infection counts by cell
+A matrix of infection counts by cell. Each cell is counted at most once per
+run if it was infected at any point in that run.
 }
 \description{
-Run a given simulation multiple times to summarize which cells were infected
+Count how often each cell was infected across repeated runs
 }
 \examples{
-x <- create_random_matrix(5, 5)
+x <- create_random_matrix(5, 5, start_infected = 1, seed = 123)
 
-multiple_run_heatmap(0.25,x,10)
+multiple_run_heatmap(
+  prob_infect = 0.25,
+  input_matrix = x,
+  runs = 10,
+  seed = 123
+)
 }

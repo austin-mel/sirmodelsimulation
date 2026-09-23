@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation.R
 \name{simulate_many_runs}
 \alias{simulate_many_runs}
-\title{Run a given simulation multiple times and get the average steps and average proportion of cells infected.}
+\title{Repeat a simulation and average the results}
 \usage{
 simulate_many_runs(
   prob_infect = 0.25,
@@ -16,31 +16,43 @@ simulate_many_runs(
 )
 }
 \arguments{
-\item{prob_infect}{Probability of infection spreading}
+\item{prob_infect}{Probability that one infected neighbor infects a
+susceptible cell during a step. Must be between 0 and 1.}
 
-\item{input_matrix}{Input matrix using 0 for susceptible, 1 for infected, 2 for recovered, and 3 for deceased.}
+\item{input_matrix}{Starting matrix using 0 for susceptible, 1 for infected,
+2 for recovered, and 3 for deceased.}
 
-\item{runs}{Number of simulation runs}
+\item{runs}{Number of simulation runs.}
 
-\item{model}{Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to "SIR".}
+\item{model}{Simulation model. Use "SIR", "SIS", or "SIRS". Defaults to
+"SIR".}
 
 \item{imm_prob}{Probability that an infected cell becomes recovered in SIRS.
 Infected cells that do not recover become susceptible. Ignored by SIR and SIS.}
 
 \item{allow_death}{Enable optional mortality after infection.}
 
-\item{fat_prob}{Probability that an infected cell becomes deceased when mortality is enabled.}
+\item{fat_prob}{Probability that an infected cell becomes deceased when
+mortality is enabled.}
 
-\item{seed}{Optional random seed for reproducible simulations}
+\item{seed}{Optional random seed for a reproducible sequence of simulations.}
 }
 \value{
-Results Dataframe
+A data frame with \code{total_runs}, \code{avg_steps}, and
+\code{avg_prop_infected}. \code{avg_prop_infected} averages \code{inf_prop}
+from \code{\link[=simulate_sir]{simulate_sir()}}, so it is based on final
+recovered proportion.
 }
 \description{
-Run a given simulation multiple times and get the average steps and average proportion of cells infected.
+Repeat a simulation and average the results
 }
 \examples{
-x <- create_random_matrix(5, 5)
+x <- create_random_matrix(5, 5, start_infected = 1, seed = 123)
 
-simulate_many_runs(0.25,x,10)
+simulate_many_runs(
+  prob_infect = 0.25,
+  input_matrix = x,
+  runs = 10,
+  seed = 123
+)
 }

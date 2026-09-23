@@ -18,6 +18,32 @@ knitr::opts_chunk$set(
 library(SIRSsim)
 ```
 
+## What SIRSsim simulates
+
+SIRSsim represents a population as a matrix, or grid. Each cell in the grid can
+be read as one person, place, or unit in the population. At each simulation
+step, infected cells can spread infection to susceptible neighbors, then move
+to their next state.
+
+The package is intended for teaching, exploration, and code experiments. It is
+not a calibrated public-health forecasting model.
+
+## Models in plain English
+
+SIRSsim supports three related model choices:
+
+- `SIR`: susceptible cells can become infected; infected cells then recover and
+  stay recovered.
+- `SIS`: susceptible cells can become infected; infected cells then become
+  susceptible again, so they can be infected again later.
+- `SIRS`: susceptible cells can become infected; infected cells recover with
+  probability `imm_prob` or otherwise become susceptible again. In this package,
+  recovered cells stay recovered once they reach that state.
+
+Optional mortality can be layered onto any model with `allow_death = TRUE`.
+When mortality is enabled, infected cells can become deceased with probability
+`fat_prob` before following the model's nonfatal transition.
+
 ## State encoding
 
 Population matrices use simple numeric states:
@@ -28,7 +54,13 @@ Population matrices use simple numeric states:
 - `3`: deceased
 
 Initial matrices usually contain only susceptible and infected cells.
-`create_random_matrix()` infects an exact number of randomly selected cells.
+Infection can spread from any of the eight neighboring cells: horizontal,
+vertical, or diagonal.
+
+## Starting matrices
+
+`create_random_matrix()` creates a matrix with an exact number of randomly
+selected infected cells.
 
 ```{r initial-matrix}
 initial <- create_random_matrix(
@@ -61,7 +93,32 @@ create_center_matrix(row = 10, col = 10, start_infected = 1, seed = NULL)
 create_corner_matrix(row = 10, col = 10, start_infected = 1, seed = NULL)
 ```
 
-## Models
+## Important parameters
+
+Most probabilities are written as numbers between `0` and `1`, where `0` means
+"never" and `1` means "always."
+
+| Concept | Argument | Meaning |
+| --- | --- | --- |
+| Infection probability | `prob_infect` | Chance that one infected neighbor infects a susceptible cell during a step. Multiple infected neighbors increase the overall infection chance. |
+| Immunity probability | `imm_prob` | In `model = "SIRS"`, chance that an infected cell becomes recovered after its infectious step instead of becoming susceptible again. Ignored by `SIR` and `SIS`. |
+| Fatality probability | `fat_prob` | Chance that an infected cell becomes deceased when `allow_death = TRUE`. Ignored when mortality is not enabled. |
+| Starting matrix | `input_matrix` | The grid of starting states passed to simulation functions. Use the matrix helpers above to create common starting patterns. |
+| Seed | `seed` | Optional random seed for reproducible random matrices and simulation paths. |
+| Full log | `full_log` | When `TRUE`, `simulate_sir()` includes one row per cell per step in the returned `full_log` data frame. |
+
+## Reproducibility
+
+Random choices occur when cells are selected for a random starting matrix, when
+infection spreads, when SIRS immunity is assigned, and when optional mortality
+is enabled. Pass the same `seed` with the same inputs to reproduce the same
+result.
+
+For repeated-run helpers such as `simulate_many_runs()` and
+`multiple_run_heatmap()`, one seed makes the whole sequence of runs
+reproducible.
+
+## One simulation
 
 `model = "SIR"` makes infected cells recover after their infectious step.
 
@@ -76,6 +133,25 @@ sir_result$steps
 sir_result$inf_prop
 sir_result$final_matrix
 ```
+
+## Reading outputs
+
+`simulate_sir()` returns a list with summary fields and, optionally, a detailed
+log.
+
+| Output | Meaning |
+| --- | --- |
+| `steps` | Number of simulation steps completed before no infected cells remained. Step `0` is the starting matrix and is included in `history` and `full_log`, not in this count. |
+| `prob_infect` | Infection probability used for the run. |
+| `inf_prop` | Proportion of cells that are recovered in the final matrix. In a basic `SIR` run without death this is often the final outbreak size; in `SIS`, `SIRS`, or mortality scenarios it is not the same as "ever infected." |
+| `history` | Data frame with susceptible, infected, and recovered counts at each step, including step `0`. Deceased cells appear in `final_matrix` and `full_log`, but are not a separate `history` column. |
+| `final_matrix` | Matrix of final cell states after the simulation stops. |
+| `full_log` | Only returned when `full_log = TRUE`; a long data frame with one row per cell per step, including cell position, state, model settings, and state indicators. |
+
+For "ever infected" questions, use `full_log` or
+`multiple_run_heatmap()` instead of `inf_prop`.
+
+## SIS and SIRS examples
 
 `model = "SIS"` makes infected cells return to susceptible.
 

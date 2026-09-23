@@ -5,7 +5,12 @@ Authors@R:
     person("Austin", "Melendez", , "austinmelendez@csus.edu", role = c("aut", "cre"))
 Author: Austin Melendez [aut, cre]
 Maintainer: Austin Melendez <austinmelendez@csus.edu>
-Description: Allows simulation runs of disease spread with SIR, SIS, and SIRS model options. Optionally enable death, immunity to disease after infection, and customize probabilities for each parameter.
+Description: Simulates disease spread across grid-based populations with SIR,
+    SIS, and SIRS model options. Users can customize infection, immunity, and
+    fatality probabilities, set reproducible seeds, and inspect summary or
+    per-cell simulation outputs.
+URL: https://github.com/austin-mel/sirmodelsimulation
+BugReports: https://github.com/austin-mel/sirmodelsimulation/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
