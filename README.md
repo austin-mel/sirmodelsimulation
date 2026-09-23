@@ -1,5 +1,22 @@
 # SIRSsim
 
+## Table of Contents
+
+- [Project Summary](#project-summary)
+- [Installation](#installation)
+- [What The Model Names Mean](#what-the-model-names-mean)
+- [Functions](#functions)
+- [State Encoding](#state-encoding)
+- [Important Parameters](#important-parameters)
+- [Reproducibility](#reproducibility)
+- [Run One Simulation](#run-one-simulation)
+- [Reading Outputs](#reading-outputs)
+- [Full Logs For Cell-Level Analysis](#full-logs-for-cell-level-analysis)
+- [More Simulation Workflows](#more-simulation-workflows)
+- [Learn More](#learn-more)
+
+## Project Summary
+
 SIRSsim is a small R package for simulating how an infection can move through a
 grid of cells. Each cell can be read as a person, location, or unit in a
 population. At each step, infected cells may spread infection to nearby
